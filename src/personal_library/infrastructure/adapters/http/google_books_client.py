@@ -25,9 +25,7 @@ class GoogleBooksClient(BookRepository):
         volume = data["items"][0]["volumeInfo"]
         isbn_10 = self._extract_identifier(volume, "ISBN_10")
         cover_url = (
-            f"{self._settings.amazon_image_base_url}/{isbn_10}.jpg"
-            if isbn_10
-            else None
+            f"{self._settings.amazon_image_base_url}/{isbn_10}.jpg" if isbn_10 else None
         )
 
         return BookInfo(
@@ -41,9 +39,7 @@ class GoogleBooksClient(BookRepository):
         )
 
     @staticmethod
-    def _extract_identifier(
-        volume_info: dict, identifier_type: str
-    ) -> str | None:
+    def _extract_identifier(volume_info: dict, identifier_type: str) -> str | None:
         for identifier in volume_info.get("industryIdentifiers", []):
             if identifier.get("type") == identifier_type:
                 return identifier.get("identifier")
