@@ -75,6 +75,43 @@ async def test_app_lifespan_creates_http_client():
     assert response.status_code == 200
 
 
+@pytest.mark.asyncio
+async def test_get_book_returns_422_for_invalid_isbn():
+    app = create_app()
+    fake_repo = FakeBookRepository(result=None)
+    app.dependency_overrides[get_book_repository] = lambda: fake_repo
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        response = await client.get("/api/books/invalid-isbn")
+
+    assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_get_book_accepts_isbn10():
+    book = BookInfo(
+        isbn_13="9788466341172",
+        isbn_10="846634117X",
+        title="Medio Mundo",
+        authors=["Joe Abercrombie"],
+        description=None,
+        published_date=None,
+        cover_image_url=None,
+    )
+    fake_repo = FakeBookRepository(result=book)
+    app = create_app()
+    app.dependency_overrides[get_book_repository] = lambda: fake_repo
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        response = await client.get("/api/books/846634117X")
+
+    assert response.status_code == 200
+
+
 class StubLookupBook:
     async def execute(self, isbn_13: str) -> BookInfo | None:
         return BookInfo(
