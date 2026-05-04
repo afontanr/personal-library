@@ -1,3 +1,6 @@
+import pytest
+from dataclasses import FrozenInstanceError
+
 from personal_library.domain.model.book import BookInfo
 
 
@@ -33,11 +36,8 @@ def test_book_info_is_immutable():
         published_date="2026-05-19",
         cover_image_url="https://example.com/img.jpg",
     )
-    try:
+    with pytest.raises(FrozenInstanceError):
         book.title = "Otro título"
-        assert False, "Should not allow mutation"
-    except (AttributeError, TypeError, Exception):
-        pass
 
 
 def test_book_info_optional_fields():
