@@ -1,8 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 
 from personal_library.application.use_cases.lookup_book import LookupBookByIsbn
-from personal_library.domain.ports.book_repository import BookRepository
-from personal_library.presentation.api.dependencies import get_book_repository
+from personal_library.presentation.api.dependencies import get_lookup_book_use_case
 
 router = APIRouter(prefix="/api/books", tags=["books"])
 
@@ -10,9 +9,8 @@ router = APIRouter(prefix="/api/books", tags=["books"])
 @router.get("/{isbn}")
 async def get_book(
     isbn: str,
-    book_repository: BookRepository = Depends(get_book_repository),
+    use_case: LookupBookByIsbn = Depends(get_lookup_book_use_case),
 ) -> dict:
-    use_case = LookupBookByIsbn(book_repository=book_repository)
     book = await use_case.execute(isbn)
     if book is None:
         raise HTTPException(status_code=404, detail="Book not found")
