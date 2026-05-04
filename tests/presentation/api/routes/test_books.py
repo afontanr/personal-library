@@ -4,7 +4,10 @@ from httpx import ASGITransport, AsyncClient
 from personal_library.domain.model.book import BookInfo
 from personal_library.domain.ports.book_repository import BookRepository
 from personal_library.main import create_app
-from personal_library.presentation.api.dependencies import get_book_repository
+from personal_library.presentation.api.dependencies import (
+    get_book_repository,
+    get_lookup_book_use_case,
+)
 
 
 class FakeBookRepository(BookRepository):
@@ -70,3 +73,30 @@ async def test_app_lifespan_creates_http_client():
     ) as client:
         response = await client.get("/health")
     assert response.status_code == 200
+
+
+class StubLookupBook:
+    async def execute(self, isbn_13: str) -> BookInfo | None:
+        return BookInfo(
+            isbn_13=isbn_13,
+            isbn_10=None,
+            title="Stub Book",
+            authors=["Stub"],
+            description=None,
+            published_date=None,
+            cover_image_url=None,
+        )
+
+
+@pytest.mark.asyncio
+async def test_get_book_uses_injected_use_case():
+    app = create_app()
+    app.dependency_overrides[get_lookup_book_use_case] = StubLookupBook
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        response = await client.get("/api/books/9788466341172")
+
+    assert response.status_code == 200
+    assert response.json()["title"] == "Stub Book"
