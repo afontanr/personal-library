@@ -22,25 +22,30 @@ stubs mínimos en los ficheros clave. Sin lógica de negocio implementada.
 Se usa la variante **hexagonal pura por capas** (Opción A). Las capas y sus responsabilidades:
 
 ### Domain (núcleo, sin dependencias externas)
+
 - `domain/model/` — entidades y value objects del dominio
 - `domain/ports/` — interfaces (puertos) que definen los contratos de salida. La capa de dominio
-  no conoce implementaciones concretas.
+no conoce implementaciones concretas.
 
 ### Application (orquestación)
+
 - `application/use_cases/` — casos de uso que coordinan entidades y puertos. Depende solo del
-  dominio.
+dominio.
 
 ### Infrastructure (detalles técnicos)
+
 - `infrastructure/adapters/http/` — adaptador HTTP concreto con httpx, implementa el puerto
-  definido en el dominio.
+definido en el dominio.
 - `infrastructure/config/` — configuración via pydantic-settings (URLs base, timeouts, etc.)
 
 ### Presentation (entrada)
+
 - `presentation/api/routes/` — routers FastAPI que reciben las peticiones HTTP.
 - `presentation/api/dependencies.py` — inyección de dependencias de FastAPI (provee adaptadores).
 - `presentation/api/router.py` — registra todos los subrouters.
 
 ### Entrypoint
+
 - `main.py` — crea la instancia de FastAPI y monta el router principal.
 
 ## Árbol de ficheros
@@ -88,16 +93,18 @@ personal-library/
 
 ## Ficheros con contenido
 
-| Fichero | Contenido |
-|---|---|
-| `pyproject.toml` | Metadatos del paquete + deps declaradas |
-| `main.py` | `create_app()` que instancia FastAPI y monta el router |
-| `domain/ports/external_http.py` | ABC con el contrato del puerto HTTP de salida |
-| `infrastructure/adapters/http/httpx_adapter.py` | Clase stub que hereda del puerto |
-| `infrastructure/config/settings.py` | `BaseSettings` con `base_url` y `timeout` |
-| `presentation/api/dependencies.py` | Factory function que provee el adaptador HTTP |
-| `presentation/api/router.py` | `APIRouter` que incluye subrouters |
-| `presentation/api/routes/health.py` | `GET /health` → `{"status": "ok"}` |
+
+| Fichero                                         | Contenido                                              |
+| ----------------------------------------------- | ------------------------------------------------------ |
+| `pyproject.toml`                                | Metadatos del paquete + deps declaradas                |
+| `main.py`                                       | `create_app()` que instancia FastAPI y monta el router |
+| `domain/ports/external_http.py`                 | ABC con el contrato del puerto HTTP de salida          |
+| `infrastructure/adapters/http/httpx_adapter.py` | Clase stub que hereda del puerto                       |
+| `infrastructure/config/settings.py`             | `BaseSettings` con `base_url` y `timeout`              |
+| `presentation/api/dependencies.py`              | Factory function que provee el adaptador HTTP          |
+| `presentation/api/router.py`                    | `APIRouter` que incluye subrouters                     |
+| `presentation/api/routes/health.py`             | `GET /health` → `{"status": "ok"}`                     |
+
 
 El resto son `__init__.py` vacíos.
 
@@ -123,3 +130,4 @@ presentation. La infraestructura implementa los puertos del dominio (inversión 
 - Modelos de dominio específicos.
 - Tests.
 - CI/CD.
+
