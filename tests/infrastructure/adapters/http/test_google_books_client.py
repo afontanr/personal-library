@@ -1,7 +1,7 @@
 import httpx
 import pytest
 
-from personal_library.domain.exceptions import BookRepositoryError
+from personal_library.domain.exceptions import BookNotFoundError, BookRepositoryError
 from personal_library.infrastructure.adapters.http.google_books_client import (
     GoogleBooksClient,
 )
@@ -58,7 +58,7 @@ async def test_find_by_isbn_returns_book_info(httpx_mock):
 
 
 @pytest.mark.asyncio
-async def test_find_by_isbn_returns_none_when_not_found(httpx_mock):
+async def test_find_by_isbn_raises_not_found_when_empty(httpx_mock):
     settings = Settings(
         google_books_base_url="https://fake.api",
         amazon_image_base_url="https://fake.images",
@@ -70,9 +70,10 @@ async def test_find_by_isbn_returns_none_when_not_found(httpx_mock):
 
     async with httpx.AsyncClient() as http_client:
         client = GoogleBooksClient(http_client=http_client, settings=settings)
-        book = await client.find_by_isbn("0000000000000")
+        with pytest.raises(BookNotFoundError) as exc_info:
+            await client.find_by_isbn("0000000000000")
 
-    assert book is None
+    assert exc_info.value.isbn == "0000000000000"
 
 
 @pytest.mark.asyncio

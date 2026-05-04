@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Path
 
 from personal_library.application.use_cases.lookup_book import LookupBookByIsbn
-from personal_library.domain.exceptions import BookRepositoryError
+from personal_library.domain.exceptions import BookNotFoundError, BookRepositoryError
 from personal_library.presentation.api.dependencies import get_lookup_book_use_case
 from personal_library.presentation.api.schemas import BookInfoResponse
 
@@ -15,10 +15,10 @@ async def get_book(
 ) -> BookInfoResponse:
     try:
         book = await use_case.execute(isbn)
-    except BookRepositoryError:
-        raise HTTPException(status_code=502, detail="Upstream service error")
-    if book is None:
-        raise HTTPException(status_code=404, detail="Book not found")
+    except BookNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="Book not found") from exc
+    except BookRepositoryError as exc:
+        raise HTTPException(status_code=502, detail="Upstream service error") from exc
     return BookInfoResponse(
         isbn_13=book.isbn_13,
         isbn_10=book.isbn_10,
