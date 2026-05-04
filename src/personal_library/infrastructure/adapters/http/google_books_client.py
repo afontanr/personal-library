@@ -1,6 +1,6 @@
 import httpx
 
-from personal_library.domain.exceptions import BookRepositoryError
+from personal_library.domain.exceptions import BookNotFoundError, BookRepositoryError
 from personal_library.domain.model.book import BookInfo
 from personal_library.domain.ports.book_repository import BookRepository
 from personal_library.infrastructure.config.settings import Settings
@@ -11,7 +11,7 @@ class GoogleBooksClient(BookRepository):
         self._http_client = http_client
         self._settings = settings
 
-    async def find_by_isbn(self, isbn_13: str) -> BookInfo | None:
+    async def find_by_isbn(self, isbn_13: str) -> BookInfo:
         try:
             response = await self._http_client.get(
                 f"{self._settings.google_books_base_url}/volumes",
@@ -31,7 +31,7 @@ class GoogleBooksClient(BookRepository):
         data = response.json()
 
         if data.get("totalItems", 0) == 0 or "items" not in data:
-            return None
+            raise BookNotFoundError(isbn_13)
 
         volume = data["items"][0]["volumeInfo"]
         isbn_10 = self._extract_identifier(volume, "ISBN_10")

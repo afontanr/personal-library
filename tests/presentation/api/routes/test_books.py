@@ -1,6 +1,7 @@
 import pytest
 from httpx import ASGITransport, AsyncClient
 
+from personal_library.domain.exceptions import BookNotFoundError
 from personal_library.domain.model.book import BookInfo
 from personal_library.domain.ports.book_repository import BookRepository
 from personal_library.main import create_app
@@ -11,10 +12,12 @@ from personal_library.presentation.api.dependencies import (
 
 
 class FakeBookRepository(BookRepository):
-    def __init__(self, result: BookInfo | None):
+    def __init__(self, result: BookInfo | None = None):
         self._result = result
 
-    async def find_by_isbn(self, isbn_13: str) -> BookInfo | None:
+    async def find_by_isbn(self, isbn_13: str) -> BookInfo:
+        if self._result is None:
+            raise BookNotFoundError(isbn_13)
         return self._result
 
 
@@ -110,10 +113,11 @@ async def test_get_book_accepts_isbn10():
         response = await client.get("/api/books/846634117X")
 
     assert response.status_code == 200
+    assert response.json()["isbn_13"] == "9788466341172"
 
 
 class StubLookupBook:
-    async def execute(self, isbn_13: str) -> BookInfo | None:
+    async def execute(self, isbn_13: str) -> BookInfo:
         return BookInfo(
             isbn_13=isbn_13,
             isbn_10=None,
