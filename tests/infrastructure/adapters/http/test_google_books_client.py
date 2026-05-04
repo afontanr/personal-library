@@ -1,6 +1,7 @@
 import httpx
 import pytest
 
+from personal_library.domain.exceptions import BookRepositoryError
 from personal_library.infrastructure.adapters.http.google_books_client import (
     GoogleBooksClient,
 )
@@ -109,3 +110,37 @@ async def test_find_by_isbn_handles_missing_isbn10(httpx_mock):
     assert book is not None
     assert book.isbn_10 is None
     assert book.cover_image_url is None
+
+
+@pytest.mark.asyncio
+async def test_find_by_isbn_raises_repository_error_on_http_error(httpx_mock):
+    settings = Settings(
+        google_books_base_url="https://fake.api",
+        amazon_image_base_url="https://fake.images",
+    )
+    httpx_mock.add_response(
+        url="https://fake.api/volumes?q=isbn:9788466341172",
+        status_code=500,
+    )
+
+    async with httpx.AsyncClient() as http_client:
+        client = GoogleBooksClient(http_client=http_client, settings=settings)
+        with pytest.raises(BookRepositoryError):
+            await client.find_by_isbn("9788466341172")
+
+
+@pytest.mark.asyncio
+async def test_find_by_isbn_raises_repository_error_on_timeout(httpx_mock):
+    settings = Settings(
+        google_books_base_url="https://fake.api",
+        amazon_image_base_url="https://fake.images",
+    )
+    httpx_mock.add_exception(
+        httpx.ReadTimeout("timed out"),
+        url="https://fake.api/volumes?q=isbn:9788466341172",
+    )
+
+    async with httpx.AsyncClient() as http_client:
+        client = GoogleBooksClient(http_client=http_client, settings=settings)
+        with pytest.raises(BookRepositoryError):
+            await client.find_by_isbn("9788466341172")
