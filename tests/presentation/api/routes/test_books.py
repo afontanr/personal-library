@@ -60,3 +60,13 @@ async def test_get_book_returns_404_when_not_found():
 
     assert response.status_code == 404
     assert response.json()["detail"] == "Book not found"
+
+
+@pytest.mark.asyncio
+async def test_app_lifespan_creates_http_client():
+    app = create_app()
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        response = await client.get("/health")
+    assert response.status_code == 200
