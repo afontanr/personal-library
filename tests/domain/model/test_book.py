@@ -17,7 +17,10 @@ def test_book_info_creation():
     assert book.authors == ["Joe Abercrombie"]
     assert book.description == "Una novela de fantasía"
     assert book.published_date == "2026-05-19"
-    assert book.cover_image_url == "https://images-na.ssl-images-amazon.com/images/P/846634117X.jpg"
+    assert (
+        book.cover_image_url
+        == "https://images-na.ssl-images-amazon.com/images/P/846634117X.jpg"
+    )
 
 
 def test_book_info_is_immutable():
