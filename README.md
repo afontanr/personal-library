@@ -42,5 +42,30 @@ src/personal_library/
   application/    # Casos de uso
   infrastructure/ # Adaptadores HTTP, configuracion
   presentation/   # Rutas FastAPI, dependencias, esquemas
+  barcode_scanner/ # Lector de codigos de barras (Streamlit + WebRTC)
   main.py         # Punto de entrada
 ```
+
+## Lector de codigos de barras
+
+Pagina Streamlit que abre la camara del dispositivo y escanea codigos de barras en tiempo real.
+
+### Dependencias del sistema
+
+```bash
+sudo apt-get install -y libzbar0
+```
+
+### Instalacion
+
+```bash
+pip install -e ".[scanner]"
+```
+
+### Ejecutar el lector
+
+```bash
+streamlit run src/personal_library/barcode_scanner/app.py
+```
+
+La aplicacion estara disponible en `http://localhost:8501`. Pulsa **START** para abrir la camara y escanear codigos de barras.
