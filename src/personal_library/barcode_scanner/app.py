@@ -17,7 +17,7 @@ def process_frame(frame: av.VideoFrame) -> tuple[av.VideoFrame, list[str]]:
     decoded_values: list[str] = []
 
     for barcode in barcodes:
-        data = barcode.data.decode("utf-8")
+        data = barcode.data.decode("utf-8", errors="replace")
         decoded_values.append(data)
         x, y, w, h = barcode.rect
         cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
@@ -45,14 +45,10 @@ class BarcodeProcessor:
         with self._lock:
             if self.result is not None:
                 return frame
-
-        annotated_frame, decoded_values = process_frame(frame)
-
-        if decoded_values:
-            with self._lock:
+            annotated_frame, decoded_values = process_frame(frame)
+            if decoded_values:
                 self.result = decoded_values[0]
-
-        return annotated_frame
+            return annotated_frame
 
     def get_result(self) -> str | None:
         with self._lock:
@@ -72,13 +68,20 @@ def main() -> None:
         st.success(f"Codigo detectado: **{st.session_state['scanned_barcode']}**")
         if st.button("Escanear otro"):
             del st.session_state["scanned_barcode"]
+            st.session_state["scan_count"] = (
+                st.session_state.get("scan_count", 0) + 1
+            )
             st.rerun()
         return
 
     st.write("Pulsa **START** para abrir la camara y escanear un codigo de barras.")
 
+    # La key cambia con cada escaneo para forzar la reinicializacion del
+    # componente WebRTC en el navegador; sin esto la camara no se reabre.
+    scan_key = f"barcode-scanner-{st.session_state.get('scan_count', 0)}"
+
     ctx = webrtc_streamer(
-        key="barcode-scanner",
+        key=scan_key,
         mode=WebRtcMode.SENDRECV,
         video_processor_factory=BarcodeProcessor,
         media_stream_constraints={"video": True, "audio": False},
@@ -91,6 +94,9 @@ def main() -> None:
             st.session_state["scanned_barcode"] = result
             st.rerun()
         else:
+            # streamlit-webrtc no expone callbacks al hilo principal, por lo
+            # que se necesita polling. 200 ms es un compromiso entre latencia
+            # de deteccion y carga de servidor; aceptable para uso local.
             time.sleep(0.2)
             st.rerun()
 

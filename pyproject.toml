@@ -34,6 +34,7 @@ scanner = [
     "opencv-python-headless>=4.10.0",
     "pyzbar>=0.1.9",
     "av>=14.0.0",
+    "numpy>=2.0.0",
 ]
 
 [tool.setuptools.packages.find]
