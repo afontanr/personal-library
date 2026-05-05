@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import threading
+
 import av
 import cv2
 from pyzbar.pyzbar import decode
@@ -32,7 +34,34 @@ def process_frame(frame: av.VideoFrame) -> tuple[av.VideoFrame, list[str]]:
     return av.VideoFrame.from_ndarray(img, format="bgr24"), decoded_values
 
 
+class BarcodeProcessor:
+    """Video processor that stops after the first successful barcode read."""
+
+    def __init__(self) -> None:
+        self.result: str | None = None
+        self._lock = threading.Lock()
+
+    def recv(self, frame: av.VideoFrame) -> av.VideoFrame:
+        with self._lock:
+            if self.result is not None:
+                return frame
+
+        annotated_frame, decoded_values = process_frame(frame)
+
+        if decoded_values:
+            with self._lock:
+                self.result = decoded_values[0]
+
+        return annotated_frame
+
+    def get_result(self) -> str | None:
+        with self._lock:
+            return self.result
+
+
 def main() -> None:
+    import time
+
     import streamlit as st
     from streamlit_webrtc import WebRtcMode, webrtc_streamer
 
@@ -51,28 +80,19 @@ def main() -> None:
     ctx = webrtc_streamer(
         key="barcode-scanner",
         mode=WebRtcMode.SENDRECV,
-        video_frame_callback=_make_callback(st),
+        video_processor_factory=BarcodeProcessor,
         media_stream_constraints={"video": True, "audio": False},
         async_processing=True,
     )
 
-    if ctx.state.playing and "pending_barcode" in st.session_state:
-        st.session_state["scanned_barcode"] = st.session_state.pop("pending_barcode")
-        st.rerun()
-
-
-def _make_callback(st):  # type: ignore[no-untyped-def]
-    """Return a video frame callback that writes the first detected barcode."""
-
-    def video_frame_callback(frame: av.VideoFrame) -> av.VideoFrame:
-        if "pending_barcode" in st.session_state:
-            return frame
-        annotated_frame, decoded_values = process_frame(frame)
-        if decoded_values:
-            st.session_state["pending_barcode"] = decoded_values[0]
-        return annotated_frame
-
-    return video_frame_callback
+    if ctx.state.playing and ctx.video_processor:
+        result = ctx.video_processor.get_result()
+        if result:
+            st.session_state["scanned_barcode"] = result
+            st.rerun()
+        else:
+            time.sleep(0.2)
+            st.rerun()
 
 
 if __name__ == "__page__" or __name__ == "__main__":
