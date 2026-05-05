@@ -38,28 +38,41 @@ def main() -> None:
 
     st.set_page_config(page_title="Lector de Codigos de Barras", layout="centered")
     st.title("Lector de codigos de barras")
+
+    if "scanned_barcode" in st.session_state:
+        st.success(f"Codigo detectado: **{st.session_state['scanned_barcode']}**")
+        if st.button("Escanear otro"):
+            del st.session_state["scanned_barcode"]
+            st.rerun()
+        return
+
     st.write("Pulsa **START** para abrir la camara y escanear un codigo de barras.")
 
-    result_placeholder = st.empty()
-
-    def video_frame_callback(frame: av.VideoFrame) -> av.VideoFrame:
-        annotated_frame, decoded_values = process_frame(frame)
-        if decoded_values:
-            st.session_state["last_barcode"] = decoded_values[-1]
-        return annotated_frame
-
-    webrtc_streamer(
+    ctx = webrtc_streamer(
         key="barcode-scanner",
         mode=WebRtcMode.SENDRECV,
-        video_frame_callback=video_frame_callback,
+        video_frame_callback=_make_callback(st),
         media_stream_constraints={"video": True, "audio": False},
         async_processing=True,
     )
 
-    if "last_barcode" in st.session_state:
-        result_placeholder.success(
-            f"Codigo detectado: **{st.session_state['last_barcode']}**"
-        )
+    if ctx.state.playing and "pending_barcode" in st.session_state:
+        st.session_state["scanned_barcode"] = st.session_state.pop("pending_barcode")
+        st.rerun()
+
+
+def _make_callback(st):  # type: ignore[no-untyped-def]
+    """Return a video frame callback that writes the first detected barcode."""
+
+    def video_frame_callback(frame: av.VideoFrame) -> av.VideoFrame:
+        if "pending_barcode" in st.session_state:
+            return frame
+        annotated_frame, decoded_values = process_frame(frame)
+        if decoded_values:
+            st.session_state["pending_barcode"] = decoded_values[0]
+        return annotated_frame
+
+    return video_frame_callback
 
 
 if __name__ == "__page__" or __name__ == "__main__":
