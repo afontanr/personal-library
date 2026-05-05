@@ -6,7 +6,7 @@ API FastAPI con arquitectura hexagonal para integraciones HTTP externas.
 
 - Python >= 3.11
 
-## Instalacion
+## Instalación
 
 ```bash
 python -m venv .venv
@@ -14,13 +14,13 @@ source .venv/bin/activate
 pip install -e ".[dev]"
 ```
 
-## Ejecutar la aplicacion
+## Ejecutar la aplicación
 
 ```bash
 uvicorn personal_library.main:app --reload
 ```
 
-La API estara disponible en `http://localhost:8000`.
+La API estará disponible en `http://localhost:8000`.
 
 ## Ejecutar tests
 
@@ -40,15 +40,15 @@ ruff check src/ tests/
 src/personal_library/
   domain/         # Modelo de dominio, puertos (sin dependencias externas)
   application/    # Casos de uso
-  infrastructure/ # Adaptadores HTTP, configuracion
+  infrastructure/ # Adaptadores HTTP, configuración
   presentation/   # Rutas FastAPI, dependencias, esquemas
-  barcode_scanner/ # Lector de codigos de barras (Streamlit + WebRTC)
+  barcode_scanner/ # Lector de códigos de barras (Streamlit + WebRTC)
   main.py         # Punto de entrada
 ```
 
-## Lector de codigos de barras
+## Lector de códigos de barras
 
-Pagina Streamlit que abre la camara del dispositivo y escanea codigos de barras en tiempo real.
+Página Streamlit que abre la cámara del dispositivo y escanea códigos de barras en tiempo real.
 
 ### Dependencias del sistema
 
@@ -56,7 +56,7 @@ Pagina Streamlit que abre la camara del dispositivo y escanea codigos de barras 
 sudo apt-get install -y libzbar0
 ```
 
-### Instalacion
+### Instalación
 
 ```bash
 pip install -e ".[scanner]"
@@ -68,4 +68,4 @@ pip install -e ".[scanner]"
 streamlit run src/personal_library/barcode_scanner/app.py
 ```
 
-La aplicacion estara disponible en `http://localhost:8501`. Pulsa **START** para abrir la camara y escanear codigos de barras.
+La aplicación estará disponible en `http://localhost:8501`. Pulsa **START** para abrir la cámara y escanear códigos de barras.
