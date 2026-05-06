@@ -69,3 +69,22 @@ streamlit run src/personal_library/barcode_scanner/app.py
 ```
 
 La aplicación estará disponible en `http://localhost:8501`. Pulsa **START** para abrir la cámara y escanear códigos de barras.
+
+### Integración con la API de libros
+
+Tras detectar un código de barras, el lector consulta automáticamente `GET /api/books/{isbn}` y muestra la ficha del libro (título, autores, portada y descripción).
+
+Para ello **la API debe estar en marcha**:
+
+```bash
+uvicorn personal_library.main:app --reload
+```
+
+Si Streamlit no corre en el mismo host que la API, define la variable de entorno `PERSONAL_LIBRARY_API_BASE` antes de lanzar el lector:
+
+```bash
+export PERSONAL_LIBRARY_API_BASE=http://<host-api>:8000
+streamlit run src/personal_library/barcode_scanner/app.py
+```
+
+El valor por defecto es `http://127.0.0.1:8000`.
