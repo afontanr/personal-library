@@ -11,7 +11,7 @@ _ISBN10 = re.compile(r"^\d{9}[\dX]$")
 
 
 def normalize_isbn_for_api(raw: str) -> str | None:
-    """Devuelve ISBN listo para el path de FastAPI o None si no coincide con el patrón de la API."""
+    """Devuelve ISBN listo para el path de FastAPI o None si no coincide."""
     cleaned = re.sub(r"[^0-9Xx]", "", (raw or "").strip()).upper()
     if _ISBN13.fullmatch(cleaned):
         return cleaned
