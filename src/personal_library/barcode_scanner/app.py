@@ -58,16 +58,51 @@ class BarcodeProcessor:
 def main() -> None:
     import time
 
+    import httpx
     import streamlit as st
     from streamlit_webrtc import WebRtcMode, webrtc_streamer
+
+    from personal_library.barcode_scanner.isbn_lookup import (
+        default_api_base,
+        lookup_book_for_scan,
+    )
 
     st.set_page_config(page_title="Lector de Codigos de Barras", layout="centered")
     st.title("Lector de codigos de barras")
 
     if "scanned_barcode" in st.session_state:
-        st.success(f"Codigo detectado: **{st.session_state['scanned_barcode']}**")
+        scanned = st.session_state["scanned_barcode"]
+
+        if st.session_state.get("book_lookup_for") != scanned:
+            base = default_api_base()
+            with st.spinner("Buscando libro en la API..."):
+                with httpx.Client() as client:
+                    payload, error = lookup_book_for_scan(scanned, base, client)
+            st.session_state["book_lookup_for"] = scanned
+            st.session_state["book_payload"] = payload
+            st.session_state["book_lookup_error"] = error
+
+        st.success(f"Codigo detectado: **{scanned}**")
+
+        if st.session_state.get("book_lookup_error"):
+            st.error(st.session_state["book_lookup_error"])
+
+        book = st.session_state.get("book_payload")
+        if book:
+            st.subheader(book["title"])
+            if book.get("authors"):
+                st.write(", ".join(book["authors"]))
+            cover_url = book.get("cover_image_url")
+            if cover_url:
+                st.image(cover_url)
+            description = book.get("description")
+            if description:
+                with st.expander("Descripcion"):
+                    st.write(description)
+
         if st.button("Escanear otro"):
-            del st.session_state["scanned_barcode"]
+            for key in ("scanned_barcode", "book_lookup_for", "book_payload", "book_lookup_error"):  # noqa: E501
+                st.session_state.pop(key, None)
             st.session_state["scan_count"] = (
                 st.session_state.get("scan_count", 0) + 1
             )
