@@ -101,7 +101,13 @@ def main() -> None:
                     st.write(description)
 
         if st.button("Escanear otro"):
-            for key in ("scanned_barcode", "book_lookup_for", "book_payload", "book_lookup_error"):  # noqa: E501
+            keys_to_clear = (
+                "scanned_barcode",
+                "book_lookup_for",
+                "book_payload",
+                "book_lookup_error",
+            )
+            for key in keys_to_clear:
                 st.session_state.pop(key, None)
             st.session_state["scan_count"] = (
                 st.session_state.get("scan_count", 0) + 1

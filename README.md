@@ -91,9 +91,13 @@ streamlit run src/personal_library/barcode_scanner/app.py
 
 ### Mensajes de error
 
+Los textos coinciden con los que devuelve `lookup_book_for_scan` en `isbn_lookup.py`:
+
 | Situación | Mensaje en pantalla |
 |---|---|
-| Código no es ISBN válido | Aviso de formato ISBN-13 / ISBN-10 |
-| Libro no encontrado | "Libro no encontrado para ese ISBN" |
-| API caída o inaccesible | "No se pudo contactar la API" |
-| Error inesperado del servidor | Código HTTP del error |
+| Código no es ISBN válido | `El codigo escaneado no tiene formato ISBN-13 (13 digitos) ni ISBN-10 (9 digitos mas digito de control).` |
+| Libro no encontrado (404) | `Libro no encontrado para ese ISBN.` |
+| Error de catálogo upstream (502) | `El servicio de catalogo no respondio correctamente (502).` |
+| API caída o inaccesible | Prefijo `No se pudo contactar la API:` seguido del detalle del error |
+| Respuesta 200 con cuerpo no JSON | `La API devolvio un cuerpo que no es JSON valido.` |
+| Otro error HTTP | `Error del servidor (<codigo>).` |

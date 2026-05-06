@@ -1,6 +1,9 @@
 import httpx
 
 from personal_library.barcode_scanner.isbn_lookup import (
+    MSG_INVALID_JSON,
+    MSG_NOT_FOUND,
+    MSG_UPSTREAM_502,
     lookup_book_for_scan,
     normalize_isbn_for_api,
 )
@@ -27,12 +30,8 @@ def test_normalize_rejects_non_isbn():
     assert normalize_isbn_for_api("123") is None
 
 
-def _client_with_json(status: int, payload: dict) -> httpx.Client:
-    def handler(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(status, json=payload)
-
-    transport = httpx.MockTransport(handler)
-    return httpx.Client(transport=transport, base_url="http://test")
+def test_normalize_none_returns_none():
+    assert normalize_isbn_for_api(None) is None
 
 
 def test_lookup_success_returns_payload():
@@ -45,9 +44,13 @@ def test_lookup_success_returns_payload():
         "published_date": "2026-05-19",
         "cover_image_url": "https://example.com/cover.jpg",
     }
-    client = _client_with_json(200, body)
 
-    data, err = lookup_book_for_scan("9788466341172", "http://test", client)
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json=body)
+
+    transport = httpx.MockTransport(handler)
+    with httpx.Client(transport=transport, base_url="http://test") as client:
+        data, err = lookup_book_for_scan("9788466341172", "http://test", client)
 
     assert err is None
     assert data == body
@@ -58,27 +61,49 @@ def test_lookup_invalid_isbn_no_request():
         raise AssertionError("no HTTP call expected")
 
     transport = httpx.MockTransport(handler)
-    client = httpx.Client(transport=transport, base_url="http://test")
-
-    data, err = lookup_book_for_scan("not-isbn", "http://test", client)
+    with httpx.Client(transport=transport, base_url="http://test") as client:
+        data, err = lookup_book_for_scan("not-isbn", "http://test", client)
 
     assert data is None
+    assert err is not None
     assert "ISBN" in err
 
 
 def test_lookup_404_message():
-    client = _client_with_json(404, {"detail": "Book not found"})
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(404, json={"detail": "Book not found"})
 
-    data, err = lookup_book_for_scan("9788466341172", "http://test", client)
+    transport = httpx.MockTransport(handler)
+    with httpx.Client(transport=transport, base_url="http://test") as client:
+        data, err = lookup_book_for_scan("9788466341172", "http://test", client)
 
     assert data is None
-    assert err is not None
+    assert err == MSG_NOT_FOUND
 
 
 def test_lookup_502_message():
-    client = _client_with_json(502, {"detail": "Upstream service error"})
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(502, json={"detail": "Upstream service error"})
 
-    data, err = lookup_book_for_scan("9788466341172", "http://test", client)
+    transport = httpx.MockTransport(handler)
+    with httpx.Client(transport=transport, base_url="http://test") as client:
+        data, err = lookup_book_for_scan("9788466341172", "http://test", client)
 
     assert data is None
-    assert err is not None
+    assert err == MSG_UPSTREAM_502
+
+
+def test_lookup_200_invalid_json_body():
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            content=b"not-json",
+            headers={"Content-Type": "text/plain"},
+        )
+
+    transport = httpx.MockTransport(handler)
+    with httpx.Client(transport=transport, base_url="http://test") as client:
+        data, err = lookup_book_for_scan("9788466341172", "http://test", client)
+
+    assert data is None
+    assert err == MSG_INVALID_JSON
