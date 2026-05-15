@@ -23,7 +23,11 @@ class FakeCollectionRepository(CollectionRepository):
         return self._books.get(isbn_13)
 
     async def find_all(self) -> list[CollectionBook]:
-        return list(self._books.values())
+        return sorted(
+            self._books.values(),
+            key=lambda b: b.added_at,
+            reverse=True,
+        )
 
 
 @pytest.mark.asyncio
