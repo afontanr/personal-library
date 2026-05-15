@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}Colección — Biblioteca Personal{% endblock %}
+
+{% block content %}
+<section class="page-intro animate-in">
+  <h1 class="page-intro__title">Mi <em>Colección</em></h1>
+  <p class="page-intro__subtitle">
+    <span class="book-count">{{ books|length }}</span> {{ 'libro' if books|length == 1 else 'libros' }} en la biblioteca
+  </p>
+</section>
+
+{% if books %}
+<div class="book-grid">
+  {% for book in books %}
+  <a href="{{ url_for('book_detail', isbn=book.isbn_13) }}" class="book-card">
+    <div class="book-card__cover-wrap">
+      {% if book.cover_image_url %}
+      <img
+        src="{{ book.cover_image_url }}"
+        alt="Portada de {{ book.title }}"
+        class="book-card__cover"
+        loading="lazy"
+      >
+      {% else %}
+      <div class="book-card__cover-placeholder">
+        {{ book.title[0] | upper if book.title else '?' }}
+      </div>
+      {% endif %}
+    </div>
+    <div class="book-card__info">
+      <h2 class="book-card__title">{{ book.title }}</h2>
+      <p class="book-card__authors">{{ book.authors | join(', ') }}</p>
+      <time class="book-card__date">{{ book.published_date or 'Fecha desconocida' }}</time>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+  <div class="empty-state__icon">&#128218;</div>
+  <h2 class="empty-state__title">Tu biblioteca está vacía</h2>
+  <p class="empty-state__text">Escanea un código de barras o busca un libro por ISBN para empezar.</p>
+</div>
+{% endif %}
+{% endblock %}

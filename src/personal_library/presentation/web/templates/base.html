@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Biblioteca Personal{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('web_static', path='css/styles.css') }}">
+  {% block head %}{% endblock %}
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="site-header__inner">
+      <a href="{{ url_for('book_list') }}" class="site-title">
+        <span>Biblioteca</span> Personal
+      </a>
+      <nav class="header-nav">
+        <a href="{{ url_for('book_list') }}">Colección</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main-content">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-footer">
+    Biblioteca Personal &middot; {{ current_year }}
+  </footer>
+
+  <script src="{{ url_for('web_static', path='js/app.js') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

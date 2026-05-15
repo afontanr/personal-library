@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block title %}{{ book.title }} — Biblioteca Personal{% endblock %}
+
+{% block content %}
+<a href="{{ url_for('book_list') }}" class="back-link">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="19" y1="12" x2="5" y2="12"></line>
+    <polyline points="12 19 5 12 12 5"></polyline>
+  </svg>
+  Volver a la colección
+</a>
+
+<article class="book-detail">
+  <!-- Cover Column -->
+  <div class="book-detail__cover-col">
+    <div class="book-detail__cover-frame">
+      {% if book.cover_image_url %}
+      <img
+        src="{{ book.cover_image_url }}"
+        alt="Portada de {{ book.title }}"
+        class="book-detail__cover"
+      >
+      {% else %}
+      <div class="book-detail__cover-placeholder">
+        {{ book.title[0] | upper if book.title else '?' }}
+      </div>
+      {% endif %}
+    </div>
+    <div class="book-detail__isbn">
+      ISBN-13: <span>{{ book.isbn_13 }}</span>
+      {% if book.isbn_10 %}
+      &nbsp;&middot;&nbsp; ISBN-10: <span>{{ book.isbn_10 }}</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Info Column -->
+  <div class="book-detail__info-col">
+    <h1 class="book-detail__title">{{ book.title }}</h1>
+    <p class="book-detail__authors">{{ book.authors | join(', ') }}</p>
+
+    <div class="book-detail__meta">
+      <div class="book-detail__meta-item">
+        <span class="book-detail__meta-label">Publicación</span>
+        <span class="book-detail__meta-value">{{ book.published_date or 'Desconocida' }}</span>
+      </div>
+      <div class="book-detail__meta-item">
+        <span class="book-detail__meta-label">ISBN-13</span>
+        <span class="book-detail__meta-value">{{ book.isbn_13 }}</span>
+      </div>
+      {% if book.isbn_10 %}
+      <div class="book-detail__meta-item">
+        <span class="book-detail__meta-label">ISBN-10</span>
+        <span class="book-detail__meta-value">{{ book.isbn_10 }}</span>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Description -->
+    {% if book.description %}
+    <section class="detail-section">
+      <h2 class="detail-section__title">Sinopsis</h2>
+      <div class="book-description">{{ book.description }}</div>
+    </section>
+    {% endif %}
+
+    <!-- Genres / Tags -->
+    <section class="detail-section" id="tags-section">
+      <h2 class="detail-section__title">Géneros</h2>
+      <div class="tags-container" id="tags-container">
+        <!-- Tags rendered by JS from localStorage -->
+        <div class="tag-add-form" id="tag-add-form">
+          <input
+            type="text"
+            class="tag-add-form__input"
+            id="tag-input"
+            placeholder="Nuevo género..."
+            maxlength="30"
+            autocomplete="off"
+          >
+          <button type="button" class="tag-add-btn" id="tag-add-btn" title="Añadir género">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Rating -->
+    <section class="detail-section" id="rating-section">
+      <h2 class="detail-section__title">Valoración</h2>
+      <div class="star-rating" id="star-rating">
+        <div class="star-rating__stars" id="star-container">
+          {% for i in range(1, 6) %}
+          <div class="star-rating__star" data-star="{{ i }}">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+            <svg class="star-half-fill" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+          </div>
+          {% endfor %}
+        </div>
+        <span class="star-rating__value" id="rating-value">—</span>
+        <span class="star-rating__label">de 5</span>
+      </div>
+    </section>
+
+    <!-- Opinion -->
+    <section class="detail-section" id="opinion-section">
+      <h2 class="detail-section__title">Opinión</h2>
+      <textarea
+        class="opinion-box"
+        id="opinion-box"
+        placeholder="Escribe tu opinión sobre este libro..."
+      ></textarea>
+    </section>
+
+    <!-- Reading Dates -->
+    <section class="detail-section" id="reading-dates-section">
+      <h2 class="detail-section__title">Fechas de lectura</h2>
+      <ul class="reading-dates__list" id="reading-dates-list">
+        <!-- Rendered by JS from localStorage -->
+      </ul>
+      <div class="reading-dates__add">
+        <label for="date-start">Inicio</label>
+        <input type="date" class="date-input" id="date-start">
+        <label for="date-end">Fin</label>
+        <input type="date" class="date-input" id="date-end">
+        <button type="button" class="btn btn--primary" id="add-reading-date">
+          Añadir
+        </button>
+      </div>
+    </section>
+  </div>
+</article>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    PersonalLibrary.initBookDetail('{{ book.isbn_13 }}');
+  });
+</script>
+{% endblock %}
