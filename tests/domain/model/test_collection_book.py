@@ -1,3 +1,5 @@
+import dataclasses
+
 import pytest
 
 from personal_library.domain.model.collection_book import (
@@ -20,7 +22,7 @@ def test_reading_period_with_dates():
 
 def test_reading_period_is_immutable():
     period = ReadingPeriod(start_date="2026-05-01")
-    with pytest.raises(Exception):
+    with pytest.raises(dataclasses.FrozenInstanceError):
         period.start_date = "2026-06-01"  # type: ignore
 
 
@@ -80,5 +82,5 @@ def test_collection_book_is_immutable():
         authors=["Joe Abercrombie"],
         added_at="2026-05-15T16:00:00",
     )
-    with pytest.raises(Exception):
+    with pytest.raises(dataclasses.FrozenInstanceError):
         book.title = "Other"  # type: ignore

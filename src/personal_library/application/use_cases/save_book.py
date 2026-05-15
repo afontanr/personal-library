@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from personal_library.domain.model.collection_book import (
     CollectionBook,
@@ -51,7 +51,7 @@ class SaveBookToCollection:
             rating=book_input.rating,
             tags=book_input.tags,
             opinion=book_input.opinion,
-            added_at=datetime.now(timezone.utc).isoformat(),
+            added_at=datetime.now(UTC).isoformat(),
             reading_periods=reading_periods,
         )
 

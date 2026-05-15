@@ -3,7 +3,6 @@ from httpx import ASGITransport, AsyncClient
 
 from personal_library.domain.model.collection_book import (
     CollectionBook,
-    ReadingPeriod,
 )
 from personal_library.domain.ports.collection_repository import CollectionRepository
 from personal_library.main import create_app

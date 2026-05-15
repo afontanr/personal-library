@@ -88,7 +88,8 @@ class SqliteCollectionRepository(CollectionRepository):
 
         for period in book.reading_periods:
             await self._db.execute(
-                "INSERT INTO reading_periods (isbn_13, start_date, end_date) VALUES (?, ?, ?)",
+                "INSERT INTO reading_periods"
+                " (isbn_13, start_date, end_date) VALUES (?, ?, ?)",
                 (book.isbn_13, period.start_date, period.end_date),
             )
 
@@ -130,7 +131,9 @@ class SqliteCollectionRepository(CollectionRepository):
         ]
 
     @staticmethod
-    def _row_to_book(row: aiosqlite.Row, periods: list[ReadingPeriod]) -> CollectionBook:
+    def _row_to_book(
+        row: aiosqlite.Row, periods: list[ReadingPeriod]
+    ) -> CollectionBook:
         return CollectionBook(
             isbn_13=row["isbn_13"],
             isbn_10=row["isbn_10"],

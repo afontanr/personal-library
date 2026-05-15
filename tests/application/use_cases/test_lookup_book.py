@@ -2,6 +2,7 @@ import pytest
 
 from personal_library.application.use_cases.lookup_book import (
     LookupBookByIsbn,
+    _to_isbn10,
     _to_isbn13,
 )
 from personal_library.domain.exceptions import BookNotFoundError
@@ -73,9 +74,6 @@ async def test_lookup_normalises_isbn10_to_isbn13():
     result = await use_case.execute("846634117X")
 
     assert result.isbn_13 == "9788466341172"
-
-
-from personal_library.application.use_cases.lookup_book import _to_isbn10
 
 
 def test_to_isbn10_from_isbn13_with_978_prefix():

@@ -9,9 +9,6 @@ from personal_library.domain.ports.collection_repository import CollectionReposi
 from personal_library.infrastructure.adapters.http.google_books_client import (
     GoogleBooksClient,
 )
-from personal_library.infrastructure.adapters.db.sqlite_collection_repository import (
-    SqliteCollectionRepository,
-)
 from personal_library.infrastructure.config.settings import Settings
 
 

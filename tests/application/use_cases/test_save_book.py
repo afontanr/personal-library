@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -8,7 +8,6 @@ from personal_library.application.use_cases.save_book import (
 )
 from personal_library.domain.model.collection_book import (
     CollectionBook,
-    ReadingPeriod,
 )
 from personal_library.domain.ports.collection_repository import CollectionRepository
 
@@ -82,7 +81,7 @@ async def test_save_book_sets_added_at_to_now():
     repo = FakeCollectionRepository()
     use_case = SaveBookToCollection(collection_repository=repo)
 
-    before = datetime.now(timezone.utc).isoformat()
+    before = datetime.now(UTC).isoformat()
 
     book_input = SaveBookInput(
         isbn_13="9788466341172",

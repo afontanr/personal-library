@@ -67,7 +67,10 @@ async def book_detail(
     isbn: str = Path(pattern=r"^(\d{13}|\d{9}[\dXx])$"),
     repo: CollectionRepository = Depends(get_collection_repository),
 ):
-    from personal_library.application.use_cases.lookup_book import _to_isbn10, _to_isbn13
+    from personal_library.application.use_cases.lookup_book import (
+        _to_isbn10,
+        _to_isbn13,
+    )
     from personal_library.domain.ports.book_repository import BookRepository
     from personal_library.presentation.api.dependencies import get_book_repository
 
@@ -97,7 +100,10 @@ async def book_detail(
             }
         )
     else:
-        from personal_library.domain.exceptions import BookNotFoundError, BookRepositoryError
+        from personal_library.domain.exceptions import (
+            BookNotFoundError,
+            BookRepositoryError,
+        )
 
         book_repo: BookRepository = get_book_repository(request)
         try:
