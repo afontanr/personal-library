@@ -20,6 +20,7 @@
         src="{{ book.cover_image_url }}"
         alt="Portada de {{ book.title }}"
         class="book-detail__cover"
+        loading="lazy"
       >
       {% else %}
       <div class="book-detail__cover-placeholder">
@@ -37,13 +38,34 @@
 
   <!-- Info Column -->
   <div class="book-detail__info-col">
-    <h1 class="book-detail__title">{{ book.title }}</h1>
-    <p class="book-detail__authors">{{ book.authors | join(', ') }}</p>
+    <!-- Title (editable) -->
+    <input
+      type="text"
+      class="book-detail__title-input"
+      id="book-title-input"
+      value="{{ book.title }}"
+      autocomplete="off"
+    >
+
+    <!-- Authors (editable) -->
+    <input
+      type="text"
+      class="book-detail__authors-input"
+      id="book-authors-input"
+      value="{{ book.authors | join(', ') }}"
+      autocomplete="off"
+    >
 
     <div class="book-detail__meta">
       <div class="book-detail__meta-item">
         <span class="book-detail__meta-label">Publicación</span>
-        <span class="book-detail__meta-value">{{ book.published_date or 'Desconocida' }}</span>
+        <input
+          type="text"
+          class="book-detail__date-input"
+          id="book-date-input"
+          value="{{ book.published_date or '' }}"
+          placeholder="YYYY-MM-DD"
+        >
       </div>
       <div class="book-detail__meta-item">
         <span class="book-detail__meta-label">ISBN-13</span>
@@ -57,19 +79,33 @@
       {% endif %}
     </div>
 
-    <!-- Description -->
-    {% if book.description %}
+    <!-- Status -->
+    <div class="book-detail__meta-item" style="margin-top: 1rem;">
+      <span class="book-detail__meta-label">Estado</span>
+      <select class="status-select" id="book-status-select">
+        <option value="new" {% if book.status == 'new' %}selected{% endif %}>Nuevo</option>
+        <option value="pending" {% if book.status == 'pending' %}selected{% endif %}>Pendiente</option>
+        <option value="next_up" {% if book.status == 'next_up' %}selected{% endif %}>Siguiente</option>
+        <option value="reading" {% if book.status == 'reading' %}selected{% endif %}>Leyendo</option>
+        <option value="read" {% if book.status == 'read' %}selected{% endif %}>Leído</option>
+        <option value="unfinished" {% if book.status == 'unfinished' %}selected{% endif %}>Inacabado</option>
+      </select>
+    </div>
+
+    <!-- Description (editable) -->
     <section class="detail-section">
       <h2 class="detail-section__title">Sinopsis</h2>
-      <div class="book-description">{{ book.description }}</div>
+      <textarea
+        class="book-description-edit"
+        id="book-description-edit"
+        placeholder="Sinopsis del libro..."
+      >{{ book.description or '' }}</textarea>
     </section>
-    {% endif %}
 
     <!-- Genres / Tags -->
     <section class="detail-section" id="tags-section">
       <h2 class="detail-section__title">Géneros</h2>
       <div class="tags-container" id="tags-container">
-        <!-- Tags rendered by JS from localStorage -->
         <div class="tag-add-form" id="tag-add-form">
           <input
             type="text"
@@ -136,6 +172,29 @@
         </button>
       </div>
     </section>
+
+    <!-- Save Section -->
+    <section class="detail-section" style="margin-top: 2rem; border-top: 1px solid var(--color-gold-light); padding-top: 1.5rem;">
+      {% if book.in_collection %}
+      <div class="in-collection-badge">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+        En tu colección
+      </div>
+      <div style="margin-top: 1rem;">
+        <button type="button" class="save-button" id="save-book-btn" data-isbn="{{ book.isbn_13 }}" data-in-collection="true">
+          Guardar cambios
+        </button>
+        <p class="save-status-message" id="save-status-message"></p>
+      </div>
+      {% else %}
+      <button type="button" class="save-button" id="save-book-btn" data-isbn="{{ book.isbn_13_resolved or book.isbn_13 }}" data-in-collection="false">
+        Añadir a mi colección
+      </button>
+      <p class="save-status-message" id="save-status-message"></p>
+      {% endif %}
+    </section>
   </div>
 </article>
 {% endblock %}
@@ -143,7 +202,15 @@
 {% block scripts %}
 <script>
   document.addEventListener('DOMContentLoaded', function() {
-    PersonalLibrary.initBookDetail('{{ book.isbn_13 }}');
+    PersonalLibrary.initBookDetail('{{ book.isbn_13_resolved or book.isbn_13 }}');
   });
+
+  // Pre-fill opinion and rating from DB if the book is already in collection
+  {% if book.in_collection and book.opinion %}
+  (function() {
+    var ta = document.getElementById('opinion-box');
+    if (ta) ta.value = {{ book.opinion | tojson }};
+  })();
+  {% endif %}
 </script>
 {% endblock %}

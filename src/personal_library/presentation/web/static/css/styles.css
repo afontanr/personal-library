@@ -886,6 +886,149 @@ body::before {
   animation: fadeIn 0.5s ease both;
 }
 
+/* ─────────────── EDITABLE FIELDS ─────────────── */
+
+.book-detail__title-input {
+  font-family: var(--font-display);
+  font-size: 2.4rem;
+  font-weight: 700;
+  color: var(--color-walnut);
+  width: 100%;
+  border: 2px solid transparent;
+  border-radius: 0.5rem;
+  padding: 0.3rem 0.5rem;
+  margin: 0;
+  background: transparent;
+  transition: border-color 0.2s, background 0.2s;
+  outline: none;
+}
+
+.book-detail__title-input:focus {
+  border-color: var(--color-gold);
+  background: var(--color-cream);
+}
+
+.book-detail__authors-input {
+  font-family: var(--font-body);
+  font-size: 1.2rem;
+  color: var(--color-ink-light);
+  width: 100%;
+  border: 2px solid transparent;
+  border-radius: 0.4rem;
+  padding: 0.3rem 0.5rem;
+  margin: 0;
+  background: transparent;
+  transition: border-color 0.2s, background 0.2s;
+  outline: none;
+}
+
+.book-detail__authors-input:focus {
+  border-color: var(--color-gold);
+  background: var(--color-cream);
+}
+
+.book-detail__date-input {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  color: var(--color-ink-light);
+  border: 2px solid transparent;
+  border-radius: 0.4rem;
+  padding: 0.2rem 0.5rem;
+  background: transparent;
+  transition: border-color 0.2s, background 0.2s;
+  outline: none;
+}
+
+.book-detail__date-input:focus {
+  border-color: var(--color-gold);
+  background: var(--color-cream);
+}
+
+.book-description-edit {
+  width: 100%;
+  min-height: 120px;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 1.7;
+  color: var(--color-ink);
+  border: 2px solid transparent;
+  border-radius: 0.5rem;
+  padding: 0.8rem;
+  background: transparent;
+  resize: vertical;
+  transition: border-color 0.2s, background 0.2s;
+  outline: none;
+}
+
+.book-description-edit:focus {
+  border-color: var(--color-gold);
+  background: var(--color-cream);
+}
+
+.status-select {
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  color: var(--color-walnut);
+  border: 2px solid var(--color-gold);
+  border-radius: 0.4rem;
+  padding: 0.4rem 0.8rem;
+  background: var(--color-cream);
+  cursor: pointer;
+  outline: none;
+}
+
+.save-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-ui);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-cream);
+  background: var(--color-walnut);
+  border: none;
+  border-radius: 0.6rem;
+  padding: 0.8rem 2rem;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.save-button:hover {
+  background: var(--color-ink);
+}
+
+.save-button:active {
+  transform: scale(0.97);
+}
+
+.save-status-message {
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+  min-height: 1.2em;
+}
+
+.save-status-message.is-success {
+  color: #2d6a4f;
+}
+
+.save-status-message.is-error {
+  color: #c1292e;
+}
+
+.in-collection-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+  color: #2d6a4f;
+  background: #d8f3dc;
+  border-radius: 0.4rem;
+  padding: 0.4rem 1rem;
+  margin-top: 0.5rem;
+}
+
 /* ─────────────── RESPONSIVE ─────────────── */
 
 @media (max-width: 900px) {
