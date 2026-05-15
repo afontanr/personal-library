@@ -58,6 +58,12 @@ class BarcodeProcessor:
 def main() -> None:
     import time
 
+    from personal_library.barcode_scanner.webrtc_shutdown_patch import (
+        apply_session_shutdown_observer_patch,
+    )
+
+    apply_session_shutdown_observer_patch()
+
     import httpx
     import streamlit as st
     from streamlit_webrtc import WebRtcMode, webrtc_streamer
