@@ -4,7 +4,11 @@ from personal_library.application.use_cases.save_book import (
     SaveBookInput,
     SaveBookToCollection,
 )
-from personal_library.presentation.api.dependencies import get_save_book_use_case
+from personal_library.domain.ports.collection_repository import CollectionRepository
+from personal_library.presentation.api.dependencies import (
+    get_collection_repository,
+    get_save_book_use_case,
+)
 from personal_library.presentation.api.schemas import (
     CollectionBookResponse,
     ReadingPeriodRequest,
@@ -61,3 +65,34 @@ async def save_book(
             for rp in result.reading_periods
         ],
     )
+
+
+@router.get("", response_model=list[CollectionBookResponse])
+async def list_collection(
+    repo: CollectionRepository = Depends(get_collection_repository),
+) -> list[CollectionBookResponse]:
+    books = await repo.find_all()
+    return [
+        CollectionBookResponse(
+            isbn_13=b.isbn_13,
+            isbn_10=b.isbn_10,
+            title=b.title,
+            authors=b.authors,
+            description=b.description,
+            published_date=b.published_date,
+            cover_image_url=b.cover_image_url,
+            status=b.status,
+            rating=b.rating,
+            tags=b.tags,
+            opinion=b.opinion,
+            added_at=b.added_at,
+            reading_periods=[
+                ReadingPeriodRequest(
+                    start_date=rp.start_date,
+                    end_date=rp.end_date,
+                )
+                for rp in b.reading_periods
+            ],
+        )
+        for b in books
+    ]
