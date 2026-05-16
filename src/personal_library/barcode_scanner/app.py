@@ -55,6 +55,21 @@ class BarcodeProcessor:
             return self.result
 
 
+def _clear_scan_state() -> None:
+    import streamlit as st
+
+    for key in (
+        "scanned_barcode",
+        "book_lookup_for",
+        "book_payload",
+        "book_lookup_error",
+        "form_initialized_for",
+        "save_result",
+    ):
+        st.session_state.pop(key, None)
+    st.session_state["scan_count"] = st.session_state.get("scan_count", 0) + 1
+
+
 def main() -> None:
     import time
 
@@ -71,6 +86,7 @@ def main() -> None:
     from personal_library.barcode_scanner.isbn_lookup import (
         default_api_base,
         lookup_book_for_scan,
+        normalize_isbn_for_api,
     )
 
     st.set_page_config(page_title="Lector de Codigos de Barras", layout="centered")
@@ -95,30 +111,134 @@ def main() -> None:
 
         book = st.session_state.get("book_payload")
         if book:
-            st.subheader(book["title"])
-            if book.get("authors"):
-                st.write(", ".join(book["authors"]))
+            normalized_isbn = normalize_isbn_for_api(scanned) or scanned
+
+            if st.session_state.get("form_initialized_for") != scanned:
+                st.session_state["form_title_input"] = book.get("title", "")
+                st.session_state["form_authors_input"] = ", ".join(
+                    book.get("authors", [])
+                )
+                st.session_state["form_status_select"] = "new"
+                st.session_state["form_description_area"] = book.get(
+                    "description", ""
+                )
+                st.session_state["form_initialized_for"] = scanned
+
             cover_url = book.get("cover_image_url")
             if cover_url:
-                st.image(cover_url)
-            description = book.get("description")
-            if description:
-                with st.expander("Descripcion"):
-                    st.write(description)
+                st.image(cover_url, width=180)
 
-        if st.button("Escanear otro"):
-            keys_to_clear = (
-                "scanned_barcode",
-                "book_lookup_for",
-                "book_payload",
-                "book_lookup_error",
-            )
-            for key in keys_to_clear:
-                st.session_state.pop(key, None)
-            st.session_state["scan_count"] = (
-                st.session_state.get("scan_count", 0) + 1
-            )
-            st.rerun()
+            with st.form("save_book_form"):
+                title = st.text_input(
+                    "Titulo", key="form_title_input"
+                )
+                authors = st.text_input(
+                    "Autores (separados por coma)",
+                    key="form_authors_input",
+                )
+                status_options = [
+                    "new",
+                    "pending",
+                    "next_up",
+                    "reading",
+                    "read",
+                    "unfinished",
+                ]
+                status_labels = {
+                    "new": "Nuevo",
+                    "pending": "Pendiente",
+                    "next_up": "Siguiente",
+                    "reading": "Leyendo",
+                    "read": "Leido",
+                    "unfinished": "Inacabado",
+                }
+                status = st.selectbox(
+                    "Estado",
+                    options=status_options,
+                    format_func=lambda s: status_labels.get(s, s),
+                    index=status_options.index(
+                        st.session_state.get("form_status_select", "new")
+                    ),
+                    key="form_status_select",
+                )
+                description = st.text_area(
+                    "Descripcion",
+                    key="form_description_area",
+                    height=120,
+                )
+
+                col1, col2 = st.columns(2)
+                with col1:
+                    submitted = st.form_submit_button(
+                        "Guardar en mi coleccion"
+                    )
+                with col2:
+                    scan_again = st.form_submit_button(
+                        "Escanear otro"
+                    )
+
+                if submitted:
+                    authors_list = [
+                        a.strip()
+                        for a in authors.split(",")
+                        if a.strip()
+                    ]
+                    save_body = {
+                        "isbn_13": normalized_isbn,
+                        "title": title,
+                        "authors": authors_list,
+                        "description": description or None,
+                        "published_date": book.get("published_date"),
+                        "cover_image_url": book.get("cover_image_url"),
+                        "isbn_10": book.get("isbn_10"),
+                        "status": status,
+                    }
+                    base = default_api_base()
+                    with httpx.Client() as client:
+                        try:
+                            resp = client.post(
+                                f"{base}/api/collection",
+                                json=save_body,
+                                timeout=10,
+                            )
+                        except httpx.RequestError as exc:
+                            st.session_state["save_result"] = (
+                                False,
+                                f"Error de conexion: {exc}",
+                            )
+                        else:
+                            if resp.status_code in (200, 201):
+                                st.session_state["save_result"] = (
+                                    True,
+                                    f"'{title}' guardado en tu coleccion.",
+                                )
+                            else:
+                                try:
+                                    detail = resp.json().get(
+                                        "detail", resp.text
+                                    )
+                                except Exception:
+                                    detail = resp.text
+                                st.session_state["save_result"] = (
+                                    False,
+                                    f"Error al guardar: {detail}",
+                                )
+                    st.rerun()
+
+                if scan_again:
+                    _clear_scan_state()
+                    st.rerun()
+
+            if "save_result" in st.session_state:
+                ok, msg = st.session_state.pop("save_result")
+                if ok:
+                    st.success(msg)
+                else:
+                    st.error(msg)
+        else:
+            if st.button("Escanear otro"):
+                _clear_scan_state()
+                st.rerun()
         return
 
     st.write("Pulsa **START** para abrir la camara y escanear un codigo de barras.")

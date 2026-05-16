@@ -2,7 +2,8 @@ import pytest
 
 from personal_library.application.use_cases.lookup_book import (
     LookupBookByIsbn,
-    _to_isbn13,
+    to_isbn10,
+    to_isbn13,
 )
 from personal_library.domain.exceptions import BookNotFoundError
 from personal_library.domain.model.book import BookInfo
@@ -48,12 +49,12 @@ async def test_lookup_raises_not_found_when_missing():
 
 
 def test_to_isbn13_returns_isbn13_unchanged():
-    assert _to_isbn13("9788466341172") == "9788466341172"
+    assert to_isbn13("9788466341172") == "9788466341172"
 
 
 def test_to_isbn13_converts_isbn10():
     # ISBN-10 "846634117X" → ISBN-13 "9788466341172"
-    assert _to_isbn13("846634117X") == "9788466341172"
+    assert to_isbn13("846634117X") == "9788466341172"
 
 
 @pytest.mark.asyncio
@@ -73,3 +74,20 @@ async def test_lookup_normalises_isbn10_to_isbn13():
     result = await use_case.execute("846634117X")
 
     assert result.isbn_13 == "9788466341172"
+
+
+def test_to_isbn10_from_isbn13_with_978_prefix():
+    # ISBN-13 "9788466341172" → ISBN-10 "846634117X"
+    assert to_isbn10("9788466341172") == "846634117X"
+
+
+def test_to_isbn10_from_isbn13_with_979_prefix():
+    # ISBN-13 "9791090636071" → ISBN-10 check digit is different
+    # 979 is not a valid ISBN-10 prefix, returns original
+    result = to_isbn10("9791090636071")
+    assert result is None
+
+
+def test_to_isbn10_short_code_checksum_10():
+    # ISBN-13 "9780306406157" → ISBN-10 "0306406152" (checkdigit 2, not X)
+    assert to_isbn10("9780306406157") == "0306406152"
