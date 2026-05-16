@@ -323,11 +323,7 @@
       var description = document.getElementById('book-description-edit');
       var statusSelect = document.getElementById('book-status-select');
 
-      var isbn10 = null;
-      var isbn10El = document.querySelector('.book-detail__isbn span:last-child');
-      if (isbn10El && isbn10El.textContent.trim() && saveBtn.dataset.inCollection === 'true') {
-        isbn10 = isbn10El.textContent.trim();
-      }
+      var isbn10 = saveBtn.dataset.isbn10 || null;
 
       var coverUrl = null;
       var coverImg = document.querySelector('.book-detail__cover');

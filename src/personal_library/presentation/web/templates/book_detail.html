@@ -183,13 +183,13 @@
         En tu colección
       </div>
       <div style="margin-top: 1rem;">
-        <button type="button" class="save-button" id="save-book-btn" data-isbn="{{ book.isbn_13 }}" data-in-collection="true">
+        <button type="button" class="save-button" id="save-book-btn" data-isbn="{{ book.isbn_13 }}" data-in-collection="true" data-isbn10="{{ book.isbn_10 or '' }}">
           Guardar cambios
         </button>
         <p class="save-status-message" id="save-status-message"></p>
       </div>
       {% else %}
-      <button type="button" class="save-button" id="save-book-btn" data-isbn="{{ book.isbn_13_resolved or book.isbn_13 }}" data-in-collection="false">
+      <button type="button" class="save-button" id="save-book-btn" data-isbn="{{ book.isbn_13_resolved or book.isbn_13 }}" data-in-collection="false" data-isbn10="{{ book.isbn_10 or '' }}">
         Añadir a mi colección
       </button>
       <p class="save-status-message" id="save-status-message"></p>
