@@ -118,11 +118,24 @@ class SqliteCollectionRepository(CollectionRepository):
         )
         rows = await cursor.fetchall()
 
-        books: list[CollectionBook] = []
-        for row in rows:
-            reading_periods = await self._fetch_reading_periods(row["isbn_13"])
-            books.append(self._row_to_book(row, reading_periods))
-        return books
+        periods_cursor = await self._db.execute(
+            "SELECT isbn_13, start_date, end_date FROM reading_periods"
+        )
+        all_periods_rows = await periods_cursor.fetchall()
+
+        periods_by_isbn: dict[str, list[ReadingPeriod]] = {}
+        for p in all_periods_rows:
+            isbn = p["isbn_13"]
+            if isbn not in periods_by_isbn:
+                periods_by_isbn[isbn] = []
+            periods_by_isbn[isbn].append(
+                ReadingPeriod(start_date=p["start_date"], end_date=p["end_date"])
+            )
+
+        return [
+            self._row_to_book(row, periods_by_isbn.get(row["isbn_13"], []))
+            for row in rows
+        ]
 
     async def _fetch_reading_periods(self, isbn_13: str) -> list[ReadingPeriod]:
         cursor = await self._db.execute(
