@@ -2,7 +2,7 @@ from personal_library.domain.model.book import BookInfo
 from personal_library.domain.ports.book_repository import BookRepository
 
 
-def _to_isbn13(isbn: str) -> str:
+def to_isbn13(isbn: str) -> str:
     """Convert ISBN-10 to ISBN-13. Return ISBN-13 unchanged."""
     if len(isbn) == 13:
         return isbn
@@ -20,11 +20,11 @@ class LookupBookByIsbn:
         self._book_repository = book_repository
 
     async def execute(self, isbn: str) -> BookInfo:
-        isbn_13 = _to_isbn13(isbn)
+        isbn_13 = to_isbn13(isbn)
         return await self._book_repository.find_by_isbn(isbn_13)
 
 
-def _to_isbn10(isbn_13: str) -> str | None:
+def to_isbn10(isbn_13: str) -> str | None:
     """Convert ISBN-13 to ISBN-10. Only works for ISBN-13 starting with 978."""
     if not isbn_13.startswith("978") or len(isbn_13) != 13:
         return None

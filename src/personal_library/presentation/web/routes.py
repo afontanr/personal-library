@@ -68,13 +68,13 @@ async def book_detail(
     repo: CollectionRepository = Depends(get_collection_repository),
 ):
     from personal_library.application.use_cases.lookup_book import (
-        _to_isbn10,
-        _to_isbn13,
+        to_isbn10,
+        to_isbn13,
     )
     from personal_library.domain.ports.book_repository import BookRepository
     from personal_library.presentation.api.dependencies import get_book_repository
 
-    isbn_13 = _to_isbn13(isbn)
+    isbn_13 = to_isbn13(isbn)
     book = await repo.find_by_isbn(isbn_13)
 
     if book:
@@ -123,7 +123,7 @@ async def book_detail(
                 status_code=404,
             )
 
-        isbn_10 = api_book.isbn_10 or _to_isbn10(isbn_13)
+        isbn_10 = api_book.isbn_10 or to_isbn10(isbn_13)
 
         simple_book = SimpleBook(
             {
