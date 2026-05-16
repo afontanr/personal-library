@@ -198,3 +198,46 @@ async def test_save_with_nullable_fields():
     assert found.cover_image_url is None
     assert found.rating is None
     assert found.opinion is None
+
+
+@pytest.mark.asyncio
+async def test_save_rolls_back_on_reading_period_error():
+    repo = SqliteCollectionRepository(database_path=TEST_DB)
+    await repo.initialize()
+
+    book = CollectionBook(
+        isbn_13="9788466341172",
+        title="Medio Mundo",
+        authors=["Joe Abercrombie"],
+        added_at="2026-05-15T16:00:00",
+    )
+    await repo.save(book)
+
+    bad_book = CollectionBook(
+        isbn_13="9788466341172",
+        title="After Crash",
+        authors=["X"],
+        added_at="2026-05-16T00:00:00",
+        reading_periods=[
+            ReadingPeriod(start_date=None, end_date=None),
+        ],
+    )
+
+    original_commit = repo._db.commit
+    call_count = [0]
+
+    async def failing_commit():
+        call_count[0] += 1
+        if call_count[0] == 1:
+            raise RuntimeError("simulated crash")
+
+    repo._db.commit = failing_commit
+
+    with pytest.raises(RuntimeError, match="simulated crash"):
+        await repo.save(bad_book)
+
+    repo._db.commit = original_commit
+
+    found = await repo.find_by_isbn("9788466341172")
+    assert found is not None
+    assert found.title == "Medio Mundo"

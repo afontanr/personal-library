@@ -46,54 +46,59 @@ class SqliteCollectionRepository(CollectionRepository):
         await self._db.execute("PRAGMA foreign_keys = ON")
 
     async def save(self, book: CollectionBook) -> None:
-        await self._db.execute(
-            """
-            INSERT INTO collection_books
-                (isbn_13, isbn_10, title, authors, description,
-                 published_date, cover_image_url, status, rating,
-                 tags, opinion, added_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT(isbn_13) DO UPDATE SET
-                isbn_10 = excluded.isbn_10,
-                title = excluded.title,
-                authors = excluded.authors,
-                description = excluded.description,
-                published_date = excluded.published_date,
-                cover_image_url = excluded.cover_image_url,
-                status = excluded.status,
-                rating = excluded.rating,
-                tags = excluded.tags,
-                opinion = excluded.opinion
-            """,
-            (
-                book.isbn_13,
-                book.isbn_10,
-                book.title,
-                json.dumps(book.authors),
-                book.description,
-                book.published_date,
-                book.cover_image_url,
-                book.status,
-                book.rating,
-                json.dumps(book.tags),
-                book.opinion,
-                book.added_at,
-            ),
-        )
-
-        await self._db.execute(
-            "DELETE FROM reading_periods WHERE isbn_13 = ?",
-            (book.isbn_13,),
-        )
-
-        for period in book.reading_periods:
+        await self._db.execute("BEGIN IMMEDIATE")
+        try:
             await self._db.execute(
-                "INSERT INTO reading_periods"
-                " (isbn_13, start_date, end_date) VALUES (?, ?, ?)",
-                (book.isbn_13, period.start_date, period.end_date),
+                """
+                INSERT INTO collection_books
+                    (isbn_13, isbn_10, title, authors, description,
+                     published_date, cover_image_url, status, rating,
+                     tags, opinion, added_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(isbn_13) DO UPDATE SET
+                    isbn_10 = excluded.isbn_10,
+                    title = excluded.title,
+                    authors = excluded.authors,
+                    description = excluded.description,
+                    published_date = excluded.published_date,
+                    cover_image_url = excluded.cover_image_url,
+                    status = excluded.status,
+                    rating = excluded.rating,
+                    tags = excluded.tags,
+                    opinion = excluded.opinion
+                """,
+                (
+                    book.isbn_13,
+                    book.isbn_10,
+                    book.title,
+                    json.dumps(book.authors),
+                    book.description,
+                    book.published_date,
+                    book.cover_image_url,
+                    book.status,
+                    book.rating,
+                    json.dumps(book.tags),
+                    book.opinion,
+                    book.added_at,
+                ),
             )
 
-        await self._db.commit()
+            await self._db.execute(
+                "DELETE FROM reading_periods WHERE isbn_13 = ?",
+                (book.isbn_13,),
+            )
+
+            for period in book.reading_periods:
+                await self._db.execute(
+                    "INSERT INTO reading_periods"
+                    " (isbn_13, start_date, end_date) VALUES (?, ?, ?)",
+                    (book.isbn_13, period.start_date, period.end_date),
+                )
+
+            await self._db.commit()
+        except Exception:
+            await self._db.execute("ROLLBACK")
+            raise
 
     async def find_by_isbn(self, isbn_13: str) -> CollectionBook | None:
         cursor = await self._db.execute(
