@@ -37,6 +37,7 @@ scanner = [
     "pyzbar>=0.1.9",
     "av>=14.0.0",
     "numpy>=2.0.0",
+    "tornado>=6.4.0",
 ]
 
 [tool.setuptools.packages.find]

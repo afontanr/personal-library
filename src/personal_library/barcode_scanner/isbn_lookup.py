@@ -59,5 +59,15 @@ def lookup_book_for_scan(
     if response.status_code == 404:
         return None, MSG_NOT_FOUND
     if response.status_code == 502:
+        detail = _try_extract_detail(response)
+        if detail:
+            return None, f"Error del servicio externo: {detail}"
         return None, MSG_UPSTREAM_502
     return None, f"Error del servidor ({response.status_code})."
+
+
+def _try_extract_detail(response: httpx.Response) -> str | None:
+    try:
+        return response.json().get("detail")
+    except (json.JSONDecodeError, AttributeError, ValueError):
+        return None
