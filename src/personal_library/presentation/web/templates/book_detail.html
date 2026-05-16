@@ -202,10 +202,30 @@
 {% block scripts %}
 <script>
   document.addEventListener('DOMContentLoaded', function() {
-    PersonalLibrary.initBookDetail('{{ book.isbn_13_resolved or book.isbn_13 }}');
+    var isbn = '{{ book.isbn_13_resolved or book.isbn_13 }}';
+
+    {% if book.in_collection %}
+    {% if book.rating is not none %}
+    localStorage.setItem('pl_' + isbn + '_rating', JSON.stringify({{ book.rating }}));
+    {% endif %}
+    localStorage.setItem('pl_' + isbn + '_tags', JSON.stringify({{ book.tags | tojson }}));
+    localStorage.setItem(
+      'pl_' + isbn + '_reading_dates',
+      JSON.stringify(
+        {{ book.reading_periods | tojson }}.map(function(rp) {
+          return { start: rp.start_date, end: rp.end_date };
+        })
+      )
+    );
+    {% if book.opinion %}
+    localStorage.setItem('pl_' + isbn + '_opinion', JSON.stringify({{ book.opinion | tojson }}));
+    {% endif %}
+    {% endif %}
+
+    PersonalLibrary.initBookDetail(isbn);
   });
 
-  // Pre-fill opinion and rating from DB if the book is already in collection
+  // Pre-fill opinion textarea from server data if book is in collection
   {% if book.in_collection and book.opinion %}
   (function() {
     var ta = document.getElementById('opinion-box');
