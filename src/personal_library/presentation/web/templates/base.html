@@ -38,6 +38,17 @@
     Biblioteca Personal &middot; {{ current_year }}
   </footer>
 
+  <dialog id="delete-dialog">
+    <div class="dialog-content">
+      <h2 class="dialog-title">Eliminar libro</h2>
+      <p class="dialog-message" id="delete-dialog-message"></p>
+      <div class="dialog-actions">
+        <button type="button" class="btn btn--outline" id="delete-dialog-cancel">Cancelar</button>
+        <button type="button" class="btn btn--danger" id="delete-dialog-confirm">Eliminar</button>
+      </div>
+    </div>
+  </dialog>
+
   <script src="{{ url_for('web_static', path='js/app.js') }}"></script>
   {% block scripts %}{% endblock %}
 </body>
