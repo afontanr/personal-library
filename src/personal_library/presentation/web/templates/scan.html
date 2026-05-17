@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Escanea — Biblioteca Personal{% endblock %}
+
+{% block content %}
+<section class="page-intro animate-in">
+  <h1 class="page-intro__title"><em>Escanea</em> un libro</h1>
+  <p class="page-intro__subtitle">Usa la cámara para leer el código de barras</p>
+</section>
+
+<div class="scan-hero">
+  <div id="camera-view" class="camera-view">
+    <video id="scan-video" class="camera-view__video" autoplay playsinline></video>
+    <canvas id="scan-canvas" class="camera-view__canvas" style="display:none;"></canvas>
+  </div>
+
+  <div class="scan-controls">
+    <button type="button" id="scan-start-btn" class="scan-start-btn">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M23 7l-7 5 7 5V7z"/>
+        <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+      </svg>
+      Iniciar cámara
+    </button>
+  </div>
+
+  <p id="scan-status" class="scan-status"></p>
+</div>
+
+<div id="scan-result" class="scan-result" style="display:none;">
+  <section class="page-intro" style="margin-top: 0;">
+    <p class="page-intro__subtitle">Código detectado: <strong id="result-isbn"></strong></p>
+  </section>
+
+  <div id="book-lookup-result"></div>
+
+  <form id="save-book-form" style="display:none;">
+    <div class="scan-form">
+      <div class="scan-form__field">
+        <label class="scan-form__label" for="scan-title-input">Título</label>
+        <input type="text" class="scan-form__input" id="scan-title-input" autocomplete="off">
+      </div>
+
+      <div class="scan-form__field">
+        <label class="scan-form__label" for="scan-authors-input">Autores (separados por coma)</label>
+        <input type="text" class="scan-form__input" id="scan-authors-input" autocomplete="off">
+      </div>
+
+      <div class="scan-form__field">
+        <label class="scan-form__label" for="scan-status-select">Estado</label>
+        <select class="scan-form__select" id="scan-status-select">
+          <option value="new">Nuevo</option>
+          <option value="pending">Pendiente</option>
+          <option value="next_up">Siguiente</option>
+          <option value="reading">Leyendo</option>
+          <option value="read">Leído</option>
+          <option value="unfinished">Inacabado</option>
+        </select>
+      </div>
+
+      <div class="scan-form__field">
+        <label class="scan-form__label" for="scan-description-area">Descripción</label>
+        <textarea class="scan-form__textarea" id="scan-description-area" rows="4"></textarea>
+      </div>
+
+      <div id="scan-cover-preview" class="scan-form__cover" style="display:none;"></div>
+
+      <div class="scan-form__actions">
+        <button type="submit" class="save-button" id="scan-save-btn">Guardar en mi colección</button>
+        <button type="button" class="save-button save-button--ghost" id="scan-another-btn">Escanear otro</button>
+      </div>
+
+      <p id="scan-save-status" class="save-status-message"></p>
+    </div>
+  </form>
+
+  <div id="lookup-error" class="scan-error" style="display:none;"></div>
+</div>
+
+<div id="unsupported-browser" class="scan-error" style="display:none;">
+  Tu navegador no soporta la detección de códigos de barras.
+  Prueba con Chrome, Edge o Safari (versión 17 o superior) en un dispositivo con cámara.
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('web_static', path='js/scanner.js') }}"></script>
+{% endblock %}
