@@ -1,9 +1,6 @@
 (function () {
   'use strict';
 
-  var video = document.getElementById('scan-video');
-  var canvas = document.getElementById('scan-canvas');
-  var ctx = canvas.getContext('2d');
   var cameraView = document.getElementById('camera-view');
   var startBtn = document.getElementById('scan-start-btn');
   var statusEl = document.getElementById('scan-status');
@@ -16,20 +13,25 @@
   var unsupportedEl = document.getElementById('unsupported-browser');
   var coverPreview = document.getElementById('scan-cover-preview');
 
-  var stream = null;
-  var scanning = false;
-  var animationId = null;
   var bookPayload = null;
-  var detector = null;
+  var scanner = null;
+  var scanning = false;
 
-  if (typeof BarcodeDetector === 'undefined') {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     unsupportedEl.style.display = 'block';
     if (startBtn) startBtn.disabled = true;
     return;
   }
 
-  detector = new BarcodeDetector({
-    formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e'],
+  scanner = new Html5Qrcode('scanner-reader', {
+    formatsToSupport: [
+      Html5QrcodeSupportedFormats.EAN_13,
+      Html5QrcodeSupportedFormats.EAN_8,
+      Html5QrcodeSupportedFormats.UPC_A,
+      Html5QrcodeSupportedFormats.UPC_E,
+    ],
+    useBarCodeDetectorIfSupported: false,
+    verbose: false,
   });
 
   startBtn.addEventListener('click', startScanning);
@@ -41,79 +43,44 @@
     startBtn.textContent = 'Iniciando...';
     statusEl.textContent = '';
 
-    navigator.mediaDevices
-      .getUserMedia({
-        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
-        audio: false,
-      })
-      .then(function (mediaStream) {
-        stream = mediaStream;
-        video.srcObject = stream;
-        return video.play();
-      })
+    scanner
+      .start(
+        { facingMode: 'environment' },
+        { fps: 10 },
+        function (decodedText) {
+          if (!scanning) return;
+          onBarcodeDetected(decodedText);
+        },
+        function () {}
+      )
       .then(function () {
         scanning = true;
         startBtn.style.display = 'none';
-        statusEl.textContent = 'Apunta la cámara al código de barras del libro...';
-        scanLoop();
+        statusEl.textContent =
+          'Apunta la cámara al código de barras del libro...';
       })
       .catch(function (err) {
         startBtn.disabled = false;
         startBtn.textContent = 'Iniciar cámara';
-        statusEl.textContent = 'Error al acceder a la cámara: ' + (err.message || 'Permiso denegado');
-      });
-  }
-
-  function scanLoop() {
-    if (!scanning) return;
-
-    if (video.readyState < video.HAVE_ENOUGH_DATA) {
-      animationId = requestAnimationFrame(scanLoop);
-      return;
-    }
-
-    var vw = video.videoWidth;
-    var vh = video.videoHeight;
-
-    if (canvas.width !== vw || canvas.height !== vh) {
-      canvas.width = vw;
-      canvas.height = vh;
-    }
-
-    ctx.drawImage(video, 0, 0, vw, vh);
-
-    // createImageBitmap is required for Safari compatibility.
-    // Safari's BarcodeDetector.detect() only accepts ImageBitmap, not HTMLCanvasElement.
-    createImageBitmap(canvas)
-      .then(function (bitmap) {
-        if (!scanning) {
-          bitmap.close();
-          return;
-        }
-        return detector.detect(bitmap).then(function (barcodes) {
-          bitmap.close();
-          if (barcodes.length > 0 && scanning) {
-            onBarcodeDetected(barcodes[0].rawValue);
-          } else if (scanning) {
-            animationId = requestAnimationFrame(scanLoop);
-          }
-        });
-      })
-      .catch(function () {
-        if (scanning) {
-          animationId = requestAnimationFrame(scanLoop);
-        }
+        statusEl.textContent =
+          'Error al acceder a la cámara: ' + (err || 'Permiso denegado');
       });
   }
 
   function onBarcodeDetected(value) {
     scanning = false;
-    if (animationId) {
-      cancelAnimationFrame(animationId);
-      animationId = null;
-    }
-    stopCamera();
 
+    scanner
+      .stop()
+      .then(function () {
+        showResult(value);
+      })
+      .catch(function () {
+        showResult(value);
+      });
+  }
+
+  function showResult(value) {
     statusEl.textContent = '';
     cameraView.style.display = 'none';
 
@@ -121,15 +88,6 @@
     scanResult.style.display = 'block';
 
     lookupBook(value);
-  }
-
-  function stopCamera() {
-    if (stream) {
-      stream.getTracks().forEach(function (track) {
-        track.stop();
-      });
-      stream = null;
-    }
   }
 
   function lookupBook(isbn) {
@@ -147,7 +105,10 @@
           }
           if (response.status === 502) {
             return response.json().then(function (data) {
-              throw new Error(data.detail || 'El servicio de catálogo no respondió correctamente.');
+              throw new Error(
+                data.detail ||
+                  'El servicio de catálogo no respondió correctamente.'
+              );
             });
           }
           throw new Error('Error del servidor (' + response.status + ').');
@@ -168,13 +129,18 @@
 
   function showSaveForm(book) {
     document.getElementById('scan-title-input').value = book.title || '';
-    document.getElementById('scan-authors-input').value = (book.authors || []).join(', ');
-    document.getElementById('scan-description-area').value = book.description || '';
+    document.getElementById('scan-authors-input').value = (
+      book.authors || []
+    ).join(', ');
+    document.getElementById('scan-description-area').value =
+      book.description || '';
     document.getElementById('scan-status-select').value = 'new';
 
     if (book.cover_image_url) {
       coverPreview.innerHTML =
-        '<img src="' + book.cover_image_url + '" alt="Portada" class="scan-form__cover-img">';
+        '<img src="' +
+        book.cover_image_url +
+        '" alt="Portada" class="scan-form__cover-img">';
       coverPreview.style.display = 'block';
     } else {
       coverPreview.style.display = 'none';
@@ -197,10 +163,13 @@
     var authorsRaw = document.getElementById('scan-authors-input').value;
     var authors = authorsRaw
       .split(',')
-      .map(function (s) { return s.trim(); })
+      .map(function (s) {
+        return s.trim();
+      })
       .filter(Boolean);
     var status = document.getElementById('scan-status-select').value;
-    var description = document.getElementById('scan-description-area').value.trim() || null;
+    var description =
+      document.getElementById('scan-description-area').value.trim() || null;
 
     var body = {
       isbn_13: isbn,
@@ -244,11 +213,7 @@
 
   function resetScanner() {
     scanning = false;
-    if (animationId) {
-      cancelAnimationFrame(animationId);
-      animationId = null;
-    }
-    stopCamera();
+    scanner.stop().catch(function () {});
 
     scanResult.style.display = 'none';
     cameraView.style.display = 'block';
