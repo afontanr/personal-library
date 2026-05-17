@@ -402,6 +402,184 @@
     });
   }
 
+  /* ─────────────── DELETE DIALOG + TOAST ─────────────── */
+
+  var deleteIsbn = null;
+  var deleteOrigin = null;
+
+  var deleteDialog = document.getElementById('delete-dialog');
+  var deleteDialogMessage = document.getElementById('delete-dialog-message');
+  var deleteDialogCancel = document.getElementById('delete-dialog-cancel');
+  var deleteDialogConfirm = document.getElementById('delete-dialog-confirm');
+
+  function openDeleteDialog(isbn, title, origin) {
+    deleteIsbn = isbn;
+    deleteOrigin = origin;
+    if (deleteDialogMessage) {
+      deleteDialogMessage.textContent = 'Estas seguro de que quieres eliminar \u2018' + title + '\u2019 de tu coleccion?';
+    }
+    if (deleteDialog) {
+      deleteDialog.showModal();
+    }
+  }
+
+  function showToast(message, type) {
+    var toast = document.createElement('div');
+    toast.className = 'toast toast--' + (type || 'error');
+    toast.textContent = message;
+    document.body.appendChild(toast);
+
+    var dismissTimeout = setTimeout(function () {
+      dismissToast(toast);
+    }, 4000);
+
+    toast.addEventListener('click', function () {
+      clearTimeout(dismissTimeout);
+      dismissToast(toast);
+    });
+  }
+
+  function dismissToast(toast) {
+    toast.style.opacity = '0';
+    toast.style.transition = 'opacity 0.3s ease';
+    setTimeout(function () {
+      if (toast.parentNode) {
+        toast.parentNode.removeChild(toast);
+      }
+    }, 300);
+  }
+
+  function executeDelete() {
+    if (!deleteIsbn) return;
+
+    if (deleteDialogCancel) deleteDialogCancel.disabled = true;
+    if (deleteDialogConfirm) deleteDialogConfirm.disabled = true;
+
+    fetch('/api/collection/' + encodeURIComponent(deleteIsbn), {
+      method: 'DELETE'
+    })
+      .then(function (response) {
+        if (!response.ok) {
+          return response.json().then(function (err) {
+            throw new Error(err.detail || 'Error al eliminar');
+          });
+        }
+        return null;
+      })
+      .then(function () {
+        if (deleteDialog) deleteDialog.close();
+
+        if (deleteOrigin === 'detail') {
+          window.location.href = '/';
+        } else {
+          var card = document.querySelector('.book-card[data-isbn="' + deleteIsbn + '"]');
+          if (card) {
+            card.classList.add('is-deleting');
+            card.addEventListener('animationend', function () {
+              if (card.parentNode) card.parentNode.removeChild(card);
+              var countEl = document.querySelector('.book-count');
+              if (countEl) {
+                var count = parseInt(countEl.textContent, 10);
+                countEl.textContent = Math.max(0, count - 1);
+              }
+              var subtitle = document.querySelector('.page-intro__subtitle');
+              if (subtitle) {
+                var remaining = document.querySelectorAll('.book-card').length;
+                subtitle.innerHTML = '<span class="book-count">' + remaining + '</span> ' + (remaining === 1 ? 'libro' : 'libros') + ' en la biblioteca';
+              }
+              if (!document.querySelector('.book-card')) {
+                var grid = document.querySelector('.book-grid');
+                if (grid) {
+                  grid.insertAdjacentHTML('afterend',
+                    '<div class="empty-state">' +
+                    '<div class="empty-state__icon">&#128218;</div>' +
+                    '<h2 class="empty-state__title">Tu biblioteca est\u00e1 vac\u00eda</h2>' +
+                    '<p class="empty-state__text">Escanea un c\u00f3digo de barras o busca un libro por ISBN para empezar.</p>' +
+                    '<a href="/scan" class="btn btn--primary btn--lg" style="margin-top: 1.25rem; display: inline-flex; align-items: center; gap: 0.5rem;">' +
+                    '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+                    '<path d="M3 7V5a2 2 0 012-2h2"/><path d="M17 3h2a2 2 0 012 2v2"/><path d="M21 17v2a2 2 0 01-2 2h-2"/><path d="M7 21H5a2 2 0 01-2-2v-2"/><line x1="7" y1="12" x2="17" y2="12"/>' +
+                    '</svg>Escanear un libro</a></div>'
+                  );
+                  grid.remove();
+                }
+              }
+            });
+          }
+        }
+      })
+      .catch(function (err) {
+        if (deleteDialog) deleteDialog.close();
+        showToast(err.message, 'error');
+      })
+      .finally(function () {
+        deleteIsbn = null;
+        deleteOrigin = null;
+        if (deleteDialogCancel) deleteDialogCancel.disabled = false;
+        if (deleteDialogConfirm) deleteDialogConfirm.disabled = false;
+      });
+  }
+
+  if (deleteDialogCancel) {
+    deleteDialogCancel.addEventListener('click', function () {
+      deleteDialog.close();
+    });
+  }
+
+  if (deleteDialogConfirm) {
+    deleteDialogConfirm.addEventListener('click', function () {
+      executeDelete();
+    });
+  }
+
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest('.card-menu-trigger')) {
+      document.querySelectorAll('.card-menu-dropdown.is-open').forEach(function (dd) {
+        dd.classList.remove('is-open');
+      });
+    }
+  });
+
+  document.addEventListener('click', function (e) {
+    var trigger = e.target.closest('.card-menu-trigger');
+    if (!trigger) return;
+
+    e.stopPropagation();
+    var card = trigger.closest('.book-card');
+    if (!card) return;
+
+    var dropdown = card.querySelector('.card-menu-dropdown');
+    if (!dropdown) return;
+
+    document.querySelectorAll('.card-menu-dropdown.is-open').forEach(function (dd) {
+      if (dd !== dropdown) dd.classList.remove('is-open');
+    });
+
+    dropdown.classList.toggle('is-open');
+  });
+
+  document.addEventListener('click', function (e) {
+    var item = e.target.closest('.card-menu-item[data-action="delete"]');
+    if (!item) return;
+
+    var card = item.closest('.book-card');
+    if (!card) return;
+
+    var isbn = card.dataset.isbn;
+    var title = card.dataset.title;
+
+    var dropdown = card.querySelector('.card-menu-dropdown');
+    if (dropdown) dropdown.classList.remove('is-open');
+
+    openDeleteDialog(isbn, title, 'list');
+  });
+
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest('#delete-book-btn');
+    if (!btn) return;
+
+    openDeleteDialog(btn.dataset.isbn, btn.dataset.title, 'detail');
+  });
+
   /* ─────────────── PUBLIC INIT ─────────────── */
 
   window.PersonalLibrary = {
