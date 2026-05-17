@@ -1,12 +1,17 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, Path
 
+from personal_library.application.use_cases.delete_book import (
+    DeleteBookFromCollection,
+)
 from personal_library.application.use_cases.save_book import (
     SaveBookInput,
     SaveBookToCollection,
 )
+from personal_library.domain.exceptions import BookNotFoundError
 from personal_library.domain.ports.collection_repository import CollectionRepository
 from personal_library.presentation.api.dependencies import (
     get_collection_repository,
+    get_delete_book_use_case,
     get_save_book_use_case,
 )
 from personal_library.presentation.api.schemas import (
@@ -96,3 +101,18 @@ async def list_collection(
         )
         for b in books
     ]
+
+
+@router.delete(
+    "/{isbn}",
+    status_code=204,
+    responses={404: {"description": "Book not found"}},
+)
+async def delete_book(
+    isbn: str = Path(pattern=r"^(\d{13}|\d{9}[\dXx])$"),
+    use_case: DeleteBookFromCollection = Depends(get_delete_book_use_case),
+):
+    try:
+        await use_case.execute(isbn)
+    except BookNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="Book not found") from exc

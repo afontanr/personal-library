@@ -156,3 +156,56 @@ async def test_list_collection_returns_empty_array():
 
     assert response.status_code == 200
     assert response.json() == []
+
+
+@pytest.mark.asyncio
+async def test_delete_book_returns_204():
+    fake_repo = FakeCollectionRepository()
+    book = CollectionBook(
+        isbn_13="9788466341172",
+        isbn_10="846634117X",
+        title="Medio Mundo",
+        authors=["Joe Abercrombie"],
+        added_at="2026-05-15T16:00:00",
+    )
+    await fake_repo.save(book)
+
+    app = create_app()
+    app.dependency_overrides[get_collection_repository] = lambda: fake_repo
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        response = await client.delete("/api/collection/9788466341172")
+
+    assert response.status_code == 204
+    assert response.text == ""
+
+
+@pytest.mark.asyncio
+async def test_delete_book_returns_404_when_not_found():
+    fake_repo = FakeCollectionRepository()
+    app = create_app()
+    app.dependency_overrides[get_collection_repository] = lambda: fake_repo
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        response = await client.delete("/api/collection/0000000000000")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Book not found"
+
+
+@pytest.mark.asyncio
+async def test_delete_book_returns_422_for_invalid_isbn():
+    fake_repo = FakeCollectionRepository()
+    app = create_app()
+    app.dependency_overrides[get_collection_repository] = lambda: fake_repo
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        response = await client.delete("/api/collection/abc")
+
+    assert response.status_code == 422
