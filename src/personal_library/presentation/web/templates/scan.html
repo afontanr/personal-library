@@ -84,5 +84,12 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('web_static', path='js/vendor/zbar-wasm.js') }}"></script>
+<script src="{{ url_for('web_static', path='js/vendor/barcode-detector-polyfill.js') }}"></script>
+<script>
+  if (!('BarcodeDetector' in window)) {
+    window.BarcodeDetector = window.BarcodeDetectorPolyfill;
+  }
+</script>
 <script src="{{ url_for('web_static', path='js/scanner.js') }}"></script>
 {% endblock %}
