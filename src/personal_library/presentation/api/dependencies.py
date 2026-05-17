@@ -2,6 +2,7 @@ from functools import lru_cache
 
 from fastapi import Depends, Request
 
+from personal_library.application.use_cases.delete_book import DeleteBookFromCollection
 from personal_library.application.use_cases.lookup_book import LookupBookByIsbn
 from personal_library.application.use_cases.save_book import SaveBookToCollection
 from personal_library.domain.ports.book_repository import BookRepository
@@ -41,3 +42,9 @@ def get_save_book_use_case(
     collection_repository: CollectionRepository = Depends(get_collection_repository),
 ) -> SaveBookToCollection:
     return SaveBookToCollection(collection_repository=collection_repository)
+
+
+def get_delete_book_use_case(
+    collection_repository: CollectionRepository = Depends(get_collection_repository),
+) -> DeleteBookFromCollection:
+    return DeleteBookFromCollection(collection_repository=collection_repository)
