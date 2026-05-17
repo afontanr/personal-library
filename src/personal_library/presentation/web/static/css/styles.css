@@ -126,6 +126,12 @@ body::before {
   width: 100%;
 }
 
+.header-nav__scan {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
 /* ─────────────── MAIN CONTENT ─────────────── */
 
 .main-content {
@@ -785,6 +791,11 @@ body::before {
 .btn:hover {
   border-color: var(--gold);
   color: var(--gold);
+}
+
+.btn--lg {
+  padding: 0.875rem 2rem;
+  font-size: 1rem;
 }
 
 .btn--primary {
