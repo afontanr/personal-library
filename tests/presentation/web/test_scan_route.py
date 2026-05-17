@@ -16,3 +16,19 @@ async def test_scan_route_returns_200():
     assert response.status_code == 200
     assert "Escanea" in response.text
     assert "camera-view" in response.text
+    assert "scanner-reader" in response.text
+
+
+@pytest.mark.asyncio
+async def test_scan_route_loads_html5_qrcode():
+    app = create_app()
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        response = await client.get("/scan")
+
+    assert response.status_code == 200
+    assert "html5-qrcode.min.js" in response.text
+    assert "barcode-detector-polyfill" not in response.text
+    assert "zbar-wasm" not in response.text
