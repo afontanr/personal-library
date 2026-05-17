@@ -241,3 +241,70 @@ async def test_save_rolls_back_on_reading_period_error():
     found = await repo.find_by_isbn("9788466341172")
     assert found is not None
     assert found.title == "Medio Mundo"
+
+
+@pytest.mark.asyncio
+async def test_delete_removes_book_and_reading_periods():
+    repo = SqliteCollectionRepository(database_path=TEST_DB)
+    await repo.initialize()
+
+    book = CollectionBook(
+        isbn_13="9788466341172",
+        title="Medio Mundo",
+        authors=["Joe Abercrombie"],
+        added_at="2026-05-15T16:00:00",
+        reading_periods=[
+            ReadingPeriod(start_date="2026-05-10", end_date="2026-05-15"),
+        ],
+    )
+    await repo.save(book)
+
+    await repo.delete("9788466341172")
+
+    found = await repo.find_by_isbn("9788466341172")
+    assert found is None
+
+    cursor = await repo._db.execute(
+        "SELECT COUNT(*) FROM reading_periods WHERE isbn_13 = ?",
+        ("9788466341172",),
+    )
+    count = (await cursor.fetchone())[0]
+    assert count == 0
+
+
+@pytest.mark.asyncio
+async def test_delete_nonexistent_book_does_not_raise():
+    repo = SqliteCollectionRepository(database_path=TEST_DB)
+    await repo.initialize()
+
+    await repo.delete("0000000000000")
+
+    books = await repo.find_all()
+    assert books == []
+
+
+@pytest.mark.asyncio
+async def test_delete_only_removes_target_book():
+    repo = SqliteCollectionRepository(database_path=TEST_DB)
+    await repo.initialize()
+
+    book1 = CollectionBook(
+        isbn_13="9788466341172",
+        title="Medio Mundo",
+        authors=["Joe Abercrombie"],
+        added_at="2026-05-15T16:00:00",
+    )
+    book2 = CollectionBook(
+        isbn_13="9780451524935",
+        title="1984",
+        authors=["George Orwell"],
+        added_at="2026-05-10T10:00:00",
+    )
+    await repo.save(book1)
+    await repo.save(book2)
+
+    await repo.delete("9788466341172")
+
+    remaining = await repo.find_all()
+    assert len(remaining) == 1
+    assert remaining[0].isbn_13 == "9780451524935"
