@@ -13,27 +13,41 @@
 {% if books %}
 <div class="book-grid">
   {% for book in books %}
-  <a href="{{ url_for('book_detail', isbn=book.isbn_13) }}" class="book-card">
-    <div class="book-card__cover-wrap">
-      {% if book.cover_image_url %}
-      <img
-        src="{{ book.cover_image_url }}"
-        alt="Portada de {{ book.title }}"
-        class="book-card__cover"
-        loading="lazy"
-      >
-      {% else %}
-      <div class="book-card__cover-placeholder">
-        {{ book.title[0] | upper if book.title else '?' }}
+  <div class="book-card" data-isbn="{{ book.isbn_13 }}" data-title="{{ book.title }}">
+    <button class="card-menu-trigger" aria-label="Menú" title="Menú">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+        <circle cx="12" cy="5" r="2"/>
+        <circle cx="12" cy="12" r="2"/>
+        <circle cx="12" cy="19" r="2"/>
+      </svg>
+    </button>
+    <div class="card-menu-dropdown">
+      <button type="button" class="card-menu-item card-menu-item--danger" data-action="delete">
+        Eliminar
+      </button>
+    </div>
+    <a href="{{ url_for('book_detail', isbn=book.isbn_13) }}" class="book-card__link">
+      <div class="book-card__cover-wrap">
+        {% if book.cover_image_url %}
+        <img
+          src="{{ book.cover_image_url }}"
+          alt="Portada de {{ book.title }}"
+          class="book-card__cover"
+          loading="lazy"
+        >
+        {% else %}
+        <div class="book-card__cover-placeholder">
+          {{ book.title[0] | upper if book.title else '?' }}
+        </div>
+        {% endif %}
       </div>
-      {% endif %}
-    </div>
-    <div class="book-card__info">
-      <h2 class="book-card__title">{{ book.title }}</h2>
-      <p class="book-card__authors">{{ book.authors | join(', ') }}</p>
-      <time class="book-card__date">{{ book.published_date or 'Fecha desconocida' }}</time>
-    </div>
-  </a>
+      <div class="book-card__info">
+        <h2 class="book-card__title">{{ book.title }}</h2>
+        <p class="book-card__authors">{{ book.authors | join(', ') }}</p>
+        <time class="book-card__date">{{ book.published_date or 'Fecha desconocida' }}</time>
+      </div>
+    </a>
+  </div>
   {% endfor %}
 </div>
 {% else %}
