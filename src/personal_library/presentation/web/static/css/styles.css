@@ -1263,3 +1263,219 @@ body::before {
   color: var(--walnut);
   transform: translateY(-1px);
 }
+
+/* ─────────────── DELETE BUTTON ─────────────── */
+
+.save-button--danger {
+  background: transparent;
+  color: var(--danger);
+  border: 1px solid var(--danger);
+}
+
+.save-button--danger:hover {
+  background: var(--danger);
+  color: var(--cream);
+  border-color: var(--danger);
+}
+
+.btn--outline {
+  background: transparent;
+  color: var(--walnut);
+  border: 1px solid var(--border);
+}
+
+.btn--outline:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+.btn--danger {
+  background: var(--danger);
+  color: var(--cream);
+  border: 1px solid var(--danger);
+}
+
+.btn--danger:hover {
+  background: #8B3A1A;
+  border-color: #8B3A1A;
+}
+
+/* ─────────────── CARD MENU (list page three-dot) ─────────────── */
+
+.book-card__link {
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.card-menu-trigger {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 5;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: rgba(247, 240, 232, 0.85);
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease, background 0.2s ease;
+  color: var(--warm-gray);
+}
+
+.book-card:hover .card-menu-trigger {
+  opacity: 1;
+}
+
+.card-menu-trigger:hover {
+  background: var(--parchment);
+  color: var(--walnut);
+}
+
+.card-menu-dropdown {
+  position: absolute;
+  top: 2.5rem;
+  right: 0.5rem;
+  z-index: 10;
+  background: var(--cream);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  box-shadow: 0 4px 16px var(--shadow-warm);
+  min-width: 130px;
+  display: none;
+  overflow: hidden;
+}
+
+.card-menu-dropdown.is-open {
+  display: block;
+}
+
+.card-menu-item {
+  display: block;
+  width: 100%;
+  padding: 0.6rem 1rem;
+  border: none;
+  background: transparent;
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--walnut);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease;
+}
+
+.card-menu-item:hover {
+  background: var(--tag-bg);
+}
+
+.card-menu-item--danger {
+  color: var(--danger);
+}
+
+.card-menu-item--danger:hover {
+  background: rgba(160, 82, 45, 0.08);
+}
+
+/* ─────────────── CONFIRMATION DIALOG ─────────────── */
+
+#delete-dialog {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0;
+  background: var(--cream);
+  box-shadow: 0 16px 48px var(--shadow-deep);
+  max-width: 420px;
+  width: 90vw;
+}
+
+#delete-dialog::backdrop {
+  background: rgba(44, 24, 16, 0.4);
+  backdrop-filter: blur(2px);
+}
+
+.dialog-content {
+  padding: 2rem;
+}
+
+.dialog-title {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 500;
+  margin-bottom: 0.75rem;
+  color: var(--walnut);
+}
+
+.dialog-message {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--warm-gray);
+  margin-bottom: 1.5rem;
+}
+
+.dialog-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+/* ─────────────── TOAST NOTIFICATION ─────────────── */
+
+@keyframes toastSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.toast {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  padding: 0.85rem 1.5rem;
+  border-radius: 6px;
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--cream);
+  box-shadow: 0 4px 20px var(--shadow-deep);
+  animation: toastSlideUp 0.3s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  cursor: pointer;
+  max-width: 480px;
+  text-align: center;
+}
+
+.toast--error {
+  background: #a0452d;
+}
+
+.toast--success {
+  background: #2d6a4f;
+}
+
+/* ─────────────── CARD FADE-OUT ─────────────── */
+
+@keyframes cardFadeOut {
+  to {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+.book-card.is-deleting {
+  animation: cardFadeOut 0.35s ease forwards;
+  pointer-events: none;
+}
