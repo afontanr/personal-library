@@ -10,8 +10,7 @@
 
 <div class="scan-hero">
   <div id="camera-view" class="camera-view">
-    <video id="scan-video" class="camera-view__video" autoplay playsinline></video>
-    <canvas id="scan-canvas" class="camera-view__canvas" style="display:none;"></canvas>
+    <div id="scanner-reader"></div>
   </div>
 
   <div class="scan-controls">
@@ -78,18 +77,12 @@
 </div>
 
 <div id="unsupported-browser" class="scan-error" style="display:none;">
-  Tu navegador no soporta la detección de códigos de barras.
-  Prueba con Chrome, Edge o Safari (versión 17 o superior) en un dispositivo con cámara.
+  Tu navegador no soporta el acceso a la cámara.
+  Prueba con un navegador moderno (Chrome, Safari, Edge o Firefox) en un dispositivo con cámara.
 </div>
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('web_static', path='js/vendor/zbar-wasm.js') }}"></script>
-<script src="{{ url_for('web_static', path='js/vendor/barcode-detector-polyfill.js') }}"></script>
-<script>
-  if (!('BarcodeDetector' in window)) {
-    window.BarcodeDetector = window.barcodeDetectorPolyfill.BarcodeDetectorPolyfill;
-  }
-</script>
+<script src="{{ url_for('web_static', path='js/vendor/html5-qrcode.min.js') }}"></script>
 <script src="{{ url_for('web_static', path='js/scanner.js') }}"></script>
 {% endblock %}
