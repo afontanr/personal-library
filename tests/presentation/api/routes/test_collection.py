@@ -28,6 +28,9 @@ class FakeCollectionRepository(CollectionRepository):
             reverse=True,
         )
 
+    async def delete(self, isbn_13: str) -> None:
+        self._books.pop(isbn_13, None)
+
 
 @pytest.mark.asyncio
 async def test_save_book_returns_201():

@@ -28,6 +28,9 @@ class FakeCollectionRepository(CollectionRepository):
     async def find_all(self) -> list[CollectionBook]:
         return list(self.saved)
 
+    async def delete(self, isbn_13: str) -> None:
+        self.saved = [b for b in self.saved if b.isbn_13 != isbn_13]
+
 
 @pytest.mark.asyncio
 async def test_save_book_persists_collection_book():
