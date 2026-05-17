@@ -100,6 +100,13 @@ class SqliteCollectionRepository(CollectionRepository):
             await self._db.execute("ROLLBACK")
             raise
 
+    async def delete(self, isbn_13: str) -> None:
+        await self._db.execute(
+            "DELETE FROM collection_books WHERE isbn_13 = ?",
+            (isbn_13,),
+        )
+        await self._db.commit()
+
     async def find_by_isbn(self, isbn_13: str) -> CollectionBook | None:
         cursor = await self._db.execute(
             "SELECT * FROM collection_books WHERE isbn_13 = ?",
