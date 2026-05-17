@@ -84,10 +84,11 @@
     statusEl.textContent = '';
     cameraView.style.display = 'none';
 
-    resultIsbn.textContent = value;
+    var isbn = value.trim();
+    resultIsbn.textContent = isbn;
     scanResult.style.display = 'block';
 
-    lookupBook(value);
+    lookupBook(isbn);
   }
 
   function lookupBook(isbn) {
@@ -137,10 +138,12 @@
     document.getElementById('scan-status-select').value = 'new';
 
     if (book.cover_image_url) {
-      coverPreview.innerHTML =
-        '<img src="' +
-        book.cover_image_url +
-        '" alt="Portada" class="scan-form__cover-img">';
+      coverPreview.innerHTML = '';
+      var img = document.createElement('img');
+      img.src = book.cover_image_url;
+      img.alt = 'Portada';
+      img.className = 'scan-form__cover-img';
+      coverPreview.appendChild(img);
       coverPreview.style.display = 'block';
     } else {
       coverPreview.style.display = 'none';
@@ -212,9 +215,11 @@
   }
 
   function resetScanner() {
-    scanning = false;
-    scanner.stop().catch(function () {});
+    scanner.stop().then(resetUI).catch(resetUI);
+  }
 
+  function resetUI() {
+    scanning = false;
     scanResult.style.display = 'none';
     cameraView.style.display = 'block';
     startBtn.style.display = 'inline-flex';
@@ -228,4 +233,12 @@
     coverPreview.style.display = 'none';
     bookPayload = null;
   }
+
+  function releaseCamera() {
+    if (scanner) {
+      scanner.stop().catch(function () {});
+    }
+  }
+  window.addEventListener('beforeunload', releaseCamera);
+  window.addEventListener('pagehide', releaseCamera);
 })();
