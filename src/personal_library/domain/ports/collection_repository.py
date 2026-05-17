@@ -15,3 +15,7 @@ class CollectionRepository(ABC):
     @abstractmethod
     async def find_all(self) -> list[CollectionBook]:
         """Return all books in the collection, ordered by added_at DESC."""
+
+    @abstractmethod
+    async def delete(self, isbn_13: str) -> None:
+        """Remove a book from the collection by ISBN-13."""
