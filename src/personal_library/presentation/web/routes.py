@@ -149,3 +149,12 @@ async def book_detail(
         "book_detail.html",
         _template_context(request, book=simple_book),
     )
+
+
+@web_router.get("/scan", response_class=HTMLResponse, name="scan")
+async def scan(request: Request):
+    return templates.TemplateResponse(
+        request,
+        "scan.html",
+        _template_context(request),
+    )
