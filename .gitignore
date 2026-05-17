@@ -233,5 +233,6 @@ Thumbs.db
 
 # Project-specific
 .github/
+.superpowers/
 docs/superpowers/
 docs/code-reviews/
