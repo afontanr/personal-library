@@ -5,8 +5,17 @@ from fastapi import APIRouter, Depends, Path, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
+from personal_library.application.use_cases.lookup_book import (
+    LookupBookByIsbn,
+    to_isbn10,
+    to_isbn13,
+)
+from personal_library.domain.exceptions import BookNotFoundError, BookRepositoryError
 from personal_library.domain.ports.collection_repository import CollectionRepository
-from personal_library.presentation.api.dependencies import get_collection_repository
+from personal_library.presentation.api.dependencies import (
+    get_collection_repository,
+    get_lookup_book_use_case,
+)
 
 _WEB_DIR = FilePath(__file__).resolve().parent
 templates = Jinja2Templates(directory=str(_WEB_DIR / "templates"))
@@ -66,48 +75,36 @@ async def book_detail(
     request: Request,
     isbn: str = Path(pattern=r"^(\d{13}|\d{9}[\dXx])$"),
     repo: CollectionRepository = Depends(get_collection_repository),
+    lookup: LookupBookByIsbn = Depends(get_lookup_book_use_case),
 ):
-    from personal_library.application.use_cases.lookup_book import (
-        to_isbn10,
-        to_isbn13,
-    )
-    from personal_library.domain.ports.book_repository import BookRepository
-    from personal_library.presentation.api.dependencies import get_book_repository
-
     isbn_13 = to_isbn13(isbn)
-    book = await repo.find_by_isbn(isbn_13)
+    collection_book = await repo.find_by_isbn(isbn_13)
 
-    if book:
+    if collection_book:
         simple_book = SimpleBook(
             {
-                "isbn_13": book.isbn_13,
-                "isbn_10": book.isbn_10,
-                "title": book.title,
-                "authors": book.authors,
-                "description": book.description,
-                "published_date": book.published_date,
-                "cover_image_url": book.cover_image_url,
-                "status": book.status,
-                "rating": book.rating,
-                "tags": book.tags,
-                "opinion": book.opinion,
+                "isbn_13": collection_book.isbn_13,
+                "isbn_10": collection_book.isbn_10,
+                "title": collection_book.title,
+                "authors": collection_book.authors,
+                "description": collection_book.description,
+                "published_date": collection_book.published_date,
+                "cover_image_url": collection_book.cover_image_url,
+                "status": collection_book.status,
+                "rating": collection_book.rating,
+                "tags": collection_book.tags,
+                "opinion": collection_book.opinion,
                 "reading_periods": [
                     {"start_date": rp.start_date, "end_date": rp.end_date}
-                    for rp in book.reading_periods
+                    for rp in collection_book.reading_periods
                 ],
                 "in_collection": True,
                 "isbn_13_resolved": isbn_13,
             }
         )
     else:
-        from personal_library.domain.exceptions import (
-            BookNotFoundError,
-            BookRepositoryError,
-        )
-
-        book_repo: BookRepository = get_book_repository(request)
         try:
-            api_book = await book_repo.find_by_isbn(isbn_13)
+            api_book = await lookup.execute(isbn)
         except BookNotFoundError:
             return templates.TemplateResponse(
                 request,
