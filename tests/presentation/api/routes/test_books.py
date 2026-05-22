@@ -4,9 +4,11 @@ from httpx import ASGITransport, AsyncClient
 from personal_library.domain.exceptions import BookNotFoundError
 from personal_library.domain.model.book import BookInfo
 from personal_library.domain.ports.book_repository import BookRepository
+from personal_library.domain.ports.cover_resolver import CoverResolver
 from personal_library.main import create_app
 from personal_library.presentation.api.dependencies import (
     get_book_repository,
+    get_cover_resolver,
     get_lookup_book_use_case,
 )
 
@@ -19,6 +21,11 @@ class FakeBookRepository(BookRepository):
         if self._result is None:
             raise BookNotFoundError(isbn_13)
         return self._result
+
+
+class FakeCoverResolver(CoverResolver):
+    async def resolve(self, isbn_13: str) -> str | None:
+        return None
 
 
 @pytest.mark.asyncio
@@ -35,6 +42,7 @@ async def test_get_book_returns_200():
     fake_repo = FakeBookRepository(result=book)
     app = create_app()
     app.dependency_overrides[get_book_repository] = lambda: fake_repo
+    app.dependency_overrides[get_cover_resolver] = lambda: FakeCoverResolver()
 
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://test"
@@ -58,6 +66,7 @@ async def test_get_book_returns_404_when_not_found():
     fake_repo = FakeBookRepository(result=None)
     app = create_app()
     app.dependency_overrides[get_book_repository] = lambda: fake_repo
+    app.dependency_overrides[get_cover_resolver] = lambda: FakeCoverResolver()
 
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://test"
@@ -83,6 +92,7 @@ async def test_get_book_returns_422_for_invalid_isbn():
     app = create_app()
     fake_repo = FakeBookRepository(result=None)
     app.dependency_overrides[get_book_repository] = lambda: fake_repo
+    app.dependency_overrides[get_cover_resolver] = lambda: FakeCoverResolver()
 
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://test"
@@ -106,6 +116,7 @@ async def test_get_book_accepts_isbn10():
     fake_repo = FakeBookRepository(result=book)
     app = create_app()
     app.dependency_overrides[get_book_repository] = lambda: fake_repo
+    app.dependency_overrides[get_cover_resolver] = lambda: FakeCoverResolver()
 
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://test"
