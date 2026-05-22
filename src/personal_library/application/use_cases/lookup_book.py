@@ -1,5 +1,6 @@
 from personal_library.domain.model.book import BookInfo
 from personal_library.domain.ports.book_repository import BookRepository
+from personal_library.domain.ports.cover_resolver import CoverResolver
 
 
 def to_isbn13(isbn: str) -> str:
@@ -16,12 +17,29 @@ def to_isbn13(isbn: str) -> str:
 
 
 class LookupBookByIsbn:
-    def __init__(self, book_repository: BookRepository) -> None:
+    def __init__(
+        self,
+        book_repository: BookRepository,
+        cover_resolver: CoverResolver,
+    ) -> None:
         self._book_repository = book_repository
+        self._cover_resolver = cover_resolver
 
     async def execute(self, isbn: str) -> BookInfo:
         isbn_13 = to_isbn13(isbn)
-        return await self._book_repository.find_by_isbn(isbn_13)
+        book = await self._book_repository.find_by_isbn(isbn_13)
+        cover_url = await self._cover_resolver.resolve(isbn_13)
+        if cover_url:
+            book = BookInfo(
+                isbn_13=book.isbn_13,
+                isbn_10=book.isbn_10,
+                title=book.title,
+                authors=book.authors,
+                description=book.description,
+                published_date=book.published_date,
+                cover_image_url=cover_url,
+            )
+        return book
 
 
 def to_isbn10(isbn_13: str) -> str | None:
