@@ -28,7 +28,10 @@ class LookupBookByIsbn:
     async def execute(self, isbn: str) -> BookInfo:
         isbn_13 = to_isbn13(isbn)
         book = await self._book_repository.find_by_isbn(isbn_13)
-        cover_url = await self._cover_resolver.resolve(isbn_13)
+        try:
+            cover_url = await self._cover_resolver.resolve(isbn_13)
+        except Exception:
+            cover_url = None
         if cover_url:
             book = BookInfo(
                 isbn_13=book.isbn_13,

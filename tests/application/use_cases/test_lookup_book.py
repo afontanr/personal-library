@@ -173,3 +173,28 @@ async def test_lookup_passes_isbn13_to_resolver():
     await use_case.execute("846634117X")
 
     assert resolver.called_with == "9788466341172"
+
+
+@pytest.mark.asyncio
+async def test_lookup_survives_resolver_failure():
+    book = BookInfo(
+        isbn_13="9788466341172",
+        isbn_10="846634117X",
+        title="Medio Mundo",
+        authors=["Joe Abercrombie"],
+        description=None,
+        published_date=None,
+        cover_image_url="https://original-cover.jpg",
+    )
+
+    class RaisingCoverResolver(CoverResolver):
+        async def resolve(self, isbn_13: str) -> str | None:
+            raise RuntimeError("service down")
+
+    repo = FakeBookRepository(result=book)
+    resolver = RaisingCoverResolver()
+    use_case = LookupBookByIsbn(book_repository=repo, cover_resolver=resolver)
+
+    result = await use_case.execute("9788466341172")
+
+    assert result == book
