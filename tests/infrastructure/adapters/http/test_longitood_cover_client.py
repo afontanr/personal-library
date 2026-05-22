@@ -1,5 +1,5 @@
-import pytest
 import httpx
+import pytest
 
 from personal_library.infrastructure.adapters.http.longitood_cover_client import (
     LongitoodCoverClient,
