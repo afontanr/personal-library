@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -34,7 +35,19 @@ async def lifespan(app: FastAPI):
     await collection_repo.close()
 
 
+def _configure_logging() -> None:
+    handler = logging.StreamHandler()
+    handler.setFormatter(
+        logging.Formatter("%(levelname)s:     %(name)s - %(message)s")
+    )
+    lib_logger = logging.getLogger("personal_library")
+    lib_logger.setLevel(logging.INFO)
+    if not lib_logger.handlers:
+        lib_logger.addHandler(handler)
+
+
 def create_app() -> FastAPI:
+    _configure_logging()
     app = FastAPI(title="Personal Library", lifespan=lifespan)
     app.mount(
         "/static",
