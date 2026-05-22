@@ -7,8 +7,12 @@ from personal_library.application.use_cases.lookup_book import LookupBookByIsbn
 from personal_library.application.use_cases.save_book import SaveBookToCollection
 from personal_library.domain.ports.book_repository import BookRepository
 from personal_library.domain.ports.collection_repository import CollectionRepository
+from personal_library.domain.ports.cover_resolver import CoverResolver
 from personal_library.infrastructure.adapters.http.google_books_client import (
     GoogleBooksClient,
+)
+from personal_library.infrastructure.adapters.http.longitood_cover_client import (
+    LongitoodCoverClient,
 )
 from personal_library.infrastructure.config.settings import Settings
 
@@ -26,10 +30,22 @@ def get_book_repository(
     return GoogleBooksClient(http_client=http_client, settings=settings)
 
 
+def get_cover_resolver(
+    request: Request,
+    settings: Settings = Depends(get_settings),
+) -> CoverResolver:
+    http_client = request.app.state.http_client
+    return LongitoodCoverClient(http_client=http_client, settings=settings)
+
+
 def get_lookup_book_use_case(
     book_repository: BookRepository = Depends(get_book_repository),
+    cover_resolver: CoverResolver = Depends(get_cover_resolver),
 ) -> LookupBookByIsbn:
-    return LookupBookByIsbn(book_repository=book_repository)
+    return LookupBookByIsbn(
+        book_repository=book_repository,
+        cover_resolver=cover_resolver,
+    )
 
 
 def get_collection_repository(
