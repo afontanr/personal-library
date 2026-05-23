@@ -1,119 +1,148 @@
 # Personal Library
 
-API FastAPI con arquitectura hexagonal para integraciones HTTP externas.
+A personal book collection manager — look up books by ISBN, track your reading, rate and tag them, and scan barcodes with your camera.
 
-## Requisitos
+![Python](https://img.shields.io/badge/python-3.11+-blue)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-green)
+![License](https://img.shields.io/badge/license-Apache%202.0-orange)
 
-- Python >= 3.11
-- [uv](https://docs.astral.sh/uv/) (gestor de dependencias y entornos virtuales)
+## What it does
 
-## Instalación
+- **Look up** any book by its ISBN (13 or 10 digits) using the Google Books API.
+- **Save** books to your personal collection stored in a local SQLite database.
+- **Manage** each book with reading status, star rating, custom tags, personal opinion, and reading dates.
+- **Delete** books you no longer want in your collection.
+- **Scan** physical barcodes with your phone or desktop camera to quickly add books.
 
-```bash
-uv sync --extra dev
+Everything is available through a clean web UI — no separate frontend needed.
+
+## How it works
+
+```
+┌──────────────────────────────────────────────────┐
+│                  Your Browser                     │
+│  Collection list  │  Book detail  │  Barcode scan │
+└──────────────────────┬───────────────────────────┘
+                       │
+                 FastAPI server
+                       │
+         ┌─────────────┼─────────────┐
+         ▼             ▼             ▼
+   Google Books    SQLite DB    Cover service
 ```
 
-> El archivo `uv.lock` está versionado en Git para garantizar builds reproducibles con las mismas versiones exactas de todas las dependencias.
+1. **Search** — Enter an ISBN on the web page. The app fetches book data (title, authors, cover, description) from Google Books.
+2. **Save** — Click "Add to my collection" to store the book locally with your own metadata (status, rating, tags, opinion, reading dates).
+3. **Browse** — The home page shows your entire collection with cover thumbnails. Sort by date added. Search and filter coming soon.
+4. **Scan** — Use your camera to scan a barcode. The ISBN is extracted and the book is looked up automatically.
 
-## Ejecutar la aplicación
+The collection lives in a single SQLite file (`data/library.db`) — portable, self-contained, no cloud dependency.
+
+## Requirements
+
+- Python **3.11** or later
+- [uv](https://docs.astral.sh/uv/) — fast Python package manager
+
+## Quick start
 
 ```bash
+# Clone the repo
+git clone <repo-url>
+cd personal-library
+
+# Install dependencies
+uv sync --extra dev
+
+# Start the server
 uv run uvicorn personal_library.main:app --reload
 ```
 
-La API estará disponible en `http://localhost:8000`.
+Open **http://localhost:8000** in your browser.
 
-## Ejecutar tests
+You'll see your collection (empty at first). Use the "Add a book" button or the barcode scanner to get started.
+
+## Web UI
+
+### Collection (home page `/`)
+
+Shows all your books as a grid of cover cards. Each card shows the title, authors, status, and rating. Click a card to see full details or use the menu to delete it.
+
+### Book detail (`/book/{isbn}`)
+
+Edit everything about a book in your collection:
+
+| Field | Description |
+|---|---|
+| Title | Book title |
+| Authors | Comma-separated list |
+| Published date | Publication year/date |
+| Status | `new`, `pending`, `reading`, `done`, `dropped`, `high_priority` |
+| Rate | 1–5 star rating |
+| Tags | Custom labels (e.g. `fiction`, `programming`, `history`) |
+| Opinion | Your personal notes about the book |
+| Reading dates | When you started and finished reading |
+
+### Barcode scanner (`/scan`)
+
+A browser-based scanner using `html5-qrcode`. Works on both mobile and desktop — no extra setup needed. Grant camera permission, point at a barcode, and the book appears automatically.
+
+## Configuration
+
+| Variable | Default | Description |
+|---|---|---|
+| `GOOGLE_BOOKS_API_KEY` | *(none)* | Google Books API key. Without it, the quota is low (~100 req/day). With a key: 1000 req/day. [Get one here](https://console.cloud.google.com/apis/credentials). |
+| `cover_service_base_url` | `https://bookcover.longitood.com` | Cover image resolution service. |
+| `database_path` | `data/library.db` | Where the SQLite database is stored. |
+
+Set environment variables before launching:
 
 ```bash
-uv run pytest -v
+export GOOGLE_BOOKS_API_KEY=your-key-here
+uv run uvicorn personal_library.main:app --reload
 ```
 
-## Ejecutar linter
-
-```bash
-uv run ruff check src/ tests/
-```
-
-## Estructura del proyecto
+## Project structure
 
 ```
 src/personal_library/
-  domain/         # Modelo de dominio, puertos (sin dependencias externas)
-  application/    # Casos de uso
-  infrastructure/ # Adaptadores HTTP, configuración
-  presentation/   # Rutas FastAPI, dependencias, esquemas
-  barcode_scanner/ # Lector de códigos de barras (Streamlit + WebRTC)
-  main.py         # Punto de entrada
+├── domain/              # Core domain model and interfaces (no external deps)
+│   ├── model/           # BookInfo, CollectionBook, ReadingPeriod
+│   └── ports/           # BookRepository, CollectionRepository, CoverResolver
+├── application/         # Use cases (lookup, save, delete)
+├── infrastructure/      # Adapters and configuration
+│   ├── adapters/http/   # GoogleBooksClient, LongitoodCoverClient
+│   ├── adapters/db/     # SqliteCollectionRepository
+│   └── config/          # Settings (pydantic-settings)
+├── presentation/        # FastAPI routes, Jinja2 templates, static files
+└── main.py              # App factory and entry point
+tests/                   # Test suite (pytest)
 ```
 
-## Lector de códigos de barras
+The codebase follows a **hexagonal architecture** (ports & adapters). Domain logic has zero external dependencies, making it easy to test and swap out adapters.
 
-Página Streamlit que abre la cámara del dispositivo, escanea un código de barras ISBN y muestra automáticamente la ficha del libro (título, autores, portada y descripción) consultando la API.
-
-### Dependencias del sistema
+## Development
 
 ```bash
-sudo apt-get install -y libzbar0
-```
+# Run tests
+uv run pytest -v
 
-### Instalación
+# Run linter
+uv run ruff check src/ tests/
 
-```bash
-uv sync --extra scanner
-```
-
-### Levantar todo para usarlo
-
-Necesitas dos procesos corriendo a la vez. Ábrelos en terminales separadas:
-
-**Terminal 1 — API de libros:**
-
-```bash
+# Watch mode (auto-reload on changes)
 uv run uvicorn personal_library.main:app --reload
 ```
 
-**Terminal 2 — Lector de códigos de barras:**
+### API endpoints
 
-```bash
-uv run streamlit run src/personal_library/barcode_scanner/app.py
-```
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/health` | Health check |
+| `GET` | `/api/books/{isbn}` | Look up a book by ISBN |
+| `GET` | `/api/collection` | List all books in the collection |
+| `POST` | `/api/collection` | Save a book to the collection |
+| `DELETE` | `/api/collection/{isbn}` | Remove a book from the collection |
 
-Luego abre [http://localhost:8501](http://localhost:8501) en el navegador, pulsa **START** y escanea un código de barras ISBN. El lector normalizará el código, consultará `GET /api/books/{isbn}` en la API y mostrará la ficha del libro en pantalla.
+## License
 
-### Variable de entorno `GOOGLE_BOOKS_API_KEY` (recomendado)
-
-Sin API key, Google Books tiene una cuota diaria muy baja (~100 peticiones) y devolverá error 429 cuando se agote. Para usar tu propia cuota:
-
-1. Ve a [Google Cloud Console](https://console.cloud.google.com/apis/library/books.googleapis.com) y habilita la API Books.
-2. Crea una credencial de tipo API Key en [Credentials](https://console.cloud.google.com/apis/credentials).
-3. Exporta la variable antes de lanzar la API:
-
-```bash
-export GOOGLE_BOOKS_API_KEY=tu-api-key
-uv run uvicorn personal_library.main:app --reload
-```
-
-La cuota gratuita con API key es de 1000 peticiones/día.
-
-### Variable de entorno `PERSONAL_LIBRARY_API_BASE`
-
-Por defecto el lector apunta a `http://127.0.0.1:8000`. Si la API corre en otro host o puerto, define la variable antes de lanzar Streamlit:
-
-```bash
-export PERSONAL_LIBRARY_API_BASE=http://<host-api>:8000
-uv run streamlit run src/personal_library/barcode_scanner/app.py
-```
-
-### Mensajes de error
-
-Los textos coinciden con los que devuelve `lookup_book_for_scan` en `isbn_lookup.py`:
-
-| Situación | Mensaje en pantalla |
-|---|---|
-| Código no es ISBN válido | `El codigo escaneado no tiene formato ISBN-13 (13 digitos) ni ISBN-10 (9 digitos mas digito de control).` |
-| Libro no encontrado (404) | `Libro no encontrado para ese ISBN.` |
-| Error de catálogo upstream (502) | El error del servicio externo (detalle incluido, ej. `Error del servicio externo: Google Books API returned 429`) |
-| API caída o inaccesible | Prefijo `No se pudo contactar la API:` seguido del detalle del error |
-| Respuesta 200 con cuerpo no JSON | `La API devolvio un cuerpo que no es JSON valido.` |
-| Otro error HTTP | `Error del servidor (<codigo>).` |
+[Apache License 2.0](LICENSE)
