@@ -68,19 +68,13 @@
         >
       </div>
       <div class="book-detail__meta-item">
-        <span class="book-detail__meta-label">ISBN-13</span>
+        <span class="book-detail__meta-label">ISBN</span>
         <span class="book-detail__meta-value">{{ book.isbn_13 }}</span>
       </div>
-      {% if book.isbn_10 %}
-      <div class="book-detail__meta-item">
-        <span class="book-detail__meta-label">ISBN-10</span>
-        <span class="book-detail__meta-value">{{ book.isbn_10 }}</span>
-      </div>
-      {% endif %}
     </div>
 
     <!-- Status -->
-    <div class="book-detail__meta-item" style="margin-top: 1rem;">
+    <div class="status-section">
       <span class="book-detail__meta-label">Estado</span>
       <select class="status-select" id="book-status-select">
         <option value="new" {% if book.status == 'new' %}selected{% endif %}>Nuevo</option>

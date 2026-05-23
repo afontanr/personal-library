@@ -401,6 +401,8 @@ body::before {
   border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
   margin-bottom: 2rem;
+  align-items: flex-start;
+  flex-wrap: wrap;
 }
 
 .book-detail__meta-item {
@@ -427,6 +429,7 @@ body::before {
 /* Description */
 
 .detail-section {
+  margin-top: 2.5rem;
   margin-bottom: 2.5rem;
 }
 
@@ -943,11 +946,12 @@ body::before {
 
 .book-detail__date-input {
   font-family: var(--font-body);
-  font-size: 1rem;
+  font-size: 0.75rem;
   color: var(--color-ink-light);
   border: 2px solid transparent;
   border-radius: 0.4rem;
-  padding: 0.2rem 0.5rem;
+  padding: 0.05rem 0.35rem;
+  margin-left: -0.35rem;
   background: transparent;
   transition: border-color 0.2s, background 0.2s;
   outline: none;
@@ -960,7 +964,7 @@ body::before {
 
 .book-description-edit {
   width: 100%;
-  min-height: 120px;
+  min-height: 180px;
   font-family: var(--font-body);
   font-size: 1rem;
   line-height: 1.7;
@@ -979,8 +983,13 @@ body::before {
   background: var(--color-cream);
 }
 
+.status-section {
+  margin-top: 2.5rem;
+  margin-bottom: 2.5rem;
+}
+
 .status-select {
-  font-family: var(--font-ui);
+  font-family: var(--font-body);
   font-size: 0.9rem;
   color: var(--color-walnut);
   border: 2px solid var(--color-gold);
@@ -1093,7 +1102,7 @@ body::before {
 
   .book-detail__meta {
     justify-content: center;
-    flex-wrap: wrap;
+    gap: 1rem;
   }
 }
 
