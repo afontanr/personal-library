@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "personal-library"
 version = "0.1.0"
-description = "API FastAPI con arquitectura hexagonal para integraciones HTTP externas"
+description = "A personal book collection manager — look up books by ISBN, track your reading, rate and tag them, and scan barcodes with your camera."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { file = "LICENSE" }
@@ -25,19 +25,6 @@ dev = [
     "httpx>=0.27.0",
     "pytest-httpx>=0.35.0",
     "ruff>=0.8.0",
-    "numpy>=2.0.0",
-    "pyzbar>=0.1.9",
-    "opencv-python-headless>=4.10.0",
-    "av>=14.0.0",
-]
-scanner = [
-    "streamlit>=1.45.0",
-    "streamlit-webrtc>=0.47.0",
-    "opencv-python-headless>=4.10.0",
-    "pyzbar>=0.1.9",
-    "av>=14.0.0",
-    "numpy>=2.0.0",
-    "tornado>=6.4.0",
 ]
 
 [tool.setuptools.packages.find]
