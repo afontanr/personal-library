@@ -5,6 +5,10 @@ from fastapi import APIRouter, Depends, Path, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
+from personal_library.application.use_cases.list_collection import (
+    CollectionOrder,
+    ListCollection,
+)
 from personal_library.application.use_cases.lookup_book import (
     LookupBookByIsbn,
     to_isbn10,
@@ -14,6 +18,7 @@ from personal_library.domain.exceptions import BookNotFoundError, BookRepository
 from personal_library.domain.ports.collection_repository import CollectionRepository
 from personal_library.presentation.api.dependencies import (
     get_collection_repository,
+    get_list_collection_use_case,
     get_lookup_book_use_case,
 )
 
@@ -38,9 +43,11 @@ def _template_context(request: Request, **extra):
 @web_router.get("/", response_class=HTMLResponse, name="book_list")
 async def book_list(
     request: Request,
-    repo: CollectionRepository = Depends(get_collection_repository),
+    orden: str | None = None,
+    use_case: ListCollection = Depends(get_list_collection_use_case),
 ):
-    books = await repo.find_all()
+    order = CollectionOrder.from_param(orden)
+    books = await use_case.execute(order)
     simple_books = [
         SimpleBook(
             {
@@ -62,7 +69,7 @@ async def book_list(
     return templates.TemplateResponse(
         request,
         "book_list.html",
-        _template_context(request, books=simple_books),
+        _template_context(request, books=simple_books, order=order.value),
     )
 
 
