@@ -488,6 +488,8 @@
                 subtitle.innerHTML = '<span class="book-count">' + remaining + '</span> ' + (remaining === 1 ? 'libro' : 'libros') + ' en la biblioteca';
               }
               if (!document.querySelector('.book-card')) {
+                var sortToggle = document.querySelector('.sort-toggle');
+                if (sortToggle) sortToggle.remove();
                 var grid = document.querySelector('.book-grid');
                 if (grid) {
                   grid.insertAdjacentHTML('afterend',
