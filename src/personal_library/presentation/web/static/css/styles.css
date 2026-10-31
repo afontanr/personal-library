@@ -180,6 +180,35 @@ body::before {
   color: var(--walnut);
 }
 
+/* Sort toggle */
+
+.sort-toggle {
+  display: inline-flex;
+  margin-top: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.sort-toggle__option {
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+  color: var(--muted-brown);
+  padding: 0.35rem 0.9rem;
+  text-decoration: none;
+  transition: color 0.2s, background-color 0.2s;
+}
+
+.sort-toggle__option:not(.sort-toggle__option--active):hover {
+  color: var(--walnut);
+}
+
+.sort-toggle__option--active {
+  background: var(--walnut);
+  color: var(--cream);
+}
+
 /* Book Grid */
 
 .book-grid {

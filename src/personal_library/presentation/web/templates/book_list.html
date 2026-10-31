@@ -8,6 +8,13 @@
   <p class="page-intro__subtitle">
     <span class="book-count">{{ books|length }}</span> {{ 'libro' if books|length == 1 else 'libros' }} en la biblioteca
   </p>
+  {% if books %}
+  {% set by_author = order == 'autor' %}
+  <nav class="sort-toggle" aria-label="Ordenar colección">
+    <a href="{{ url_for('book_list') }}" class="sort-toggle__option{% if not by_author %} sort-toggle__option--active{% endif %}"{% if not by_author %} aria-current="true"{% endif %}>Recientes</a>
+    <a href="{{ url_for('book_list') }}?orden=autor" class="sort-toggle__option{% if by_author %} sort-toggle__option--active{% endif %}"{% if by_author %} aria-current="true"{% endif %}>Autor</a>
+  </nav>
+  {% endif %}
 </section>
 
 {% if books %}
