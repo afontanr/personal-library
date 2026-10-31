@@ -3,15 +3,18 @@ from fastapi import APIRouter, Depends, HTTPException, Path
 from personal_library.application.use_cases.delete_book import (
     DeleteBookFromCollection,
 )
+from personal_library.application.use_cases.list_collection import (
+    CollectionOrder,
+    ListCollection,
+)
 from personal_library.application.use_cases.save_book import (
     SaveBookInput,
     SaveBookToCollection,
 )
 from personal_library.domain.exceptions import BookNotFoundError
-from personal_library.domain.ports.collection_repository import CollectionRepository
 from personal_library.presentation.api.dependencies import (
-    get_collection_repository,
     get_delete_book_use_case,
+    get_list_collection_use_case,
     get_save_book_use_case,
 )
 from personal_library.presentation.api.schemas import (
@@ -74,9 +77,10 @@ async def save_book(
 
 @router.get("", response_model=list[CollectionBookResponse])
 async def list_collection(
-    repo: CollectionRepository = Depends(get_collection_repository),
+    orden: str | None = None,
+    use_case: ListCollection = Depends(get_list_collection_use_case),
 ) -> list[CollectionBookResponse]:
-    books = await repo.find_all()
+    books = await use_case.execute(CollectionOrder.from_param(orden))
     return [
         CollectionBookResponse(
             isbn_13=b.isbn_13,

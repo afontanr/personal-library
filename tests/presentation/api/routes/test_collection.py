@@ -143,6 +143,60 @@ async def test_list_collection_returns_books_ordered():
     assert data[1]["isbn_13"] == "9788466341172"
 
 
+def _repo_with_borges_newer_than_allende() -> FakeCollectionRepository:
+    fake_repo = FakeCollectionRepository()
+    fake_repo._books["9780000000001"] = CollectionBook(
+        isbn_13="9780000000001",
+        title="La casa de los espíritus",
+        authors=["Isabel Allende"],
+        added_at="2026-05-10T10:00:00",
+    )
+    fake_repo._books["9780000000002"] = CollectionBook(
+        isbn_13="9780000000002",
+        title="Ficciones",
+        authors=["Jorge Luis Borges"],
+        added_at="2026-05-15T16:00:00",
+    )
+    return fake_repo
+
+
+@pytest.mark.asyncio
+async def test_list_collection_orden_autor_sorts_by_first_author():
+    app = create_app()
+    fake_repo = _repo_with_borges_newer_than_allende()
+    app.dependency_overrides[get_collection_repository] = lambda: fake_repo
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        response = await client.get("/api/collection", params={"orden": "autor"})
+
+    assert response.status_code == 200
+    assert [b["authors"][0] for b in response.json()] == [
+        "Isabel Allende",
+        "Jorge Luis Borges",
+    ]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("orden", ["xyz", ""])
+async def test_list_collection_unknown_orden_falls_back_to_default(orden):
+    app = create_app()
+    fake_repo = _repo_with_borges_newer_than_allende()
+    app.dependency_overrides[get_collection_repository] = lambda: fake_repo
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        response = await client.get("/api/collection", params={"orden": orden})
+
+    assert response.status_code == 200
+    assert [b["authors"][0] for b in response.json()] == [
+        "Jorge Luis Borges",
+        "Isabel Allende",
+    ]
+
+
 @pytest.mark.asyncio
 async def test_list_collection_returns_empty_array():
     fake_repo = FakeCollectionRepository()
