@@ -1,0 +1,19 @@
+# Ejecutar la app en local (portátil). En la Raspberry Pi (LibreELEC) no se usa:
+# allí se despliega con scripts/deploy-pi.sh, ver docs/adr/0001.
+services:
+  app:
+    build: .
+    image: personal-library:latest
+    container_name: personal-library
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_PATH: /app/data/library.db
+    user: "${PUID:-1000}:${PGID:-1000}"
+    ports:
+      - "${APP_BIND:-127.0.0.1}:${APP_PORT:-8000}:8000"
+    volumes:
+      # La BD vive en el host: sobrevive a reinicios y a reconstruir la imagen.
+      - "${LIBRARY_DATA_DIR:-./data}:/app/data"
+    restart: unless-stopped

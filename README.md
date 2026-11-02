@@ -101,6 +101,44 @@ export GOOGLE_BOOKS_API_KEY=your-key-here
 uv run uvicorn personal_library.main:app --reload
 ```
 
+## Running with Docker
+
+The SQLite database lives on the host (bind mount), so it survives container restarts and image rebuilds.
+
+```bash
+cp .env.example .env     # set GOOGLE_BOOKS_API_KEY, APP_PORT, LIBRARY_DATA_DIR, PUID/PGID
+mkdir -p data            # the data dir must exist and be owned by PUID:PGID
+docker compose up -d --build
+```
+
+The app is served at `http://localhost:8000`. The camera scanner works there because browsers treat `localhost` as a secure context. To update, `git pull && docker compose up -d --build`. The port is bound to localhost only by default; set `APP_BIND=0.0.0.0` in `.env` to expose it on your LAN (the app has no authentication).
+
+### Deploying to the Raspberry Pi (LibreELEC)
+
+LibreELEC has neither `docker compose` nor `git`, so on the Pi the app runs as the `library` service (with `caddy` in front for HTTPS) of the [kodi-raspberrypi-mediacenter](https://github.com/afontanr/kodi-raspberrypi-mediacenter) scripts. The image is built here for arm64 and shipped over ssh. See [ADR 0001](docs/adr/0001-despliegue-en-libreelec.md) for the reasoning.
+
+1. **Build and load the image** (needs `docker buildx` with arm64 emulation, e.g. `docker run --privileged --rm tonistiigi/binfmt --install arm64`):
+
+   ```bash
+   scripts/deploy-pi.sh root@<pi-ip>
+   ```
+
+2. **First time only: copy your existing database** (optional). Do this before starting the container:
+
+   ```bash
+   ssh root@<pi-ip> mkdir -p /storage/external_disk/config/personal-library
+   scp data/library.db root@<pi-ip>:/storage/external_disk/config/personal-library/
+   ssh root@<pi-ip> chown -R 1000:1000 /storage/external_disk/config/personal-library
+   ```
+
+   The owner must match the PUID/PGID the container runs as (default 1000); otherwise the app can't write to the database.
+
+3. **On the Pi**, set `PUBLIC_HOSTS` (and optionally `GOOGLE_BOOKS_API_KEY`) in `mediacenter.env`, then run `scripts/start.sh library caddy` the first time and `scripts/update.sh library` after each deploy.
+
+4. **Trust Caddy's certificate on each phone** (once). Copy `/storage/external_disk/config/caddy/data/caddy/pki/authorities/local/root.crt` to the phone and install it. On iOS, also enable it under *Settings → General → About → Certificate Trust Settings*.
+
+The library is then served at `https://<pi-lan-ip>:8443` at home and at `https://10.8.0.1:8443` over WireGuard.
+
 ## Project structure
 
 ```
