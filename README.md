@@ -111,7 +111,7 @@ mkdir -p data            # the data dir must exist and be owned by PUID:PGID
 docker compose up -d --build
 ```
 
-The app is served at `http://localhost:8000`. The camera scanner works there because browsers treat `localhost` as a secure context. To update, `git pull && docker compose up -d --build`.
+The app is served at `http://localhost:8000`. The camera scanner works there because browsers treat `localhost` as a secure context. To update, `git pull && docker compose up -d --build`. The port is bound to localhost only by default; set `APP_BIND=0.0.0.0` in `.env` to expose it on your LAN (the app has no authentication).
 
 ### Deploying to the Raspberry Pi (LibreELEC)
 
@@ -128,7 +128,10 @@ LibreELEC has neither `docker compose` nor `git`, so on the Pi the app runs as t
    ```bash
    ssh root@<pi-ip> mkdir -p /storage/external_disk/config/personal-library
    scp data/library.db root@<pi-ip>:/storage/external_disk/config/personal-library/
+   ssh root@<pi-ip> chown -R 1000:1000 /storage/external_disk/config/personal-library
    ```
+
+   The owner must match the PUID/PGID the container runs as (default 1000); otherwise the app can't write to the database.
 
 3. **On the Pi**, set `PUBLIC_HOSTS` (and optionally `GOOGLE_BOOKS_API_KEY`) in `mediacenter.env`, then run `scripts/start.sh library caddy` the first time and `scripts/update.sh library` after each deploy.
 
