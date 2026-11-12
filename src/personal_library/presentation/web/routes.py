@@ -15,15 +15,18 @@ from personal_library.application.use_cases.lookup_book import (
     to_isbn13,
 )
 from personal_library.domain.exceptions import BookNotFoundError, BookRepositoryError
+from personal_library.domain.model.saga import SagaMembership
 from personal_library.domain.ports.collection_repository import CollectionRepository
 from personal_library.presentation.api.dependencies import (
     get_collection_repository,
     get_list_collection_use_case,
     get_lookup_book_use_case,
 )
+from personal_library.presentation.web.formatting import format_volume
 
 _WEB_DIR = FilePath(__file__).resolve().parent
 templates = Jinja2Templates(directory=str(_WEB_DIR / "templates"))
+templates.env.filters["volume"] = format_volume
 
 web_router = APIRouter()
 
@@ -34,6 +37,12 @@ class SimpleBook:
     def __init__(self, data: dict):
         for k, v in data.items():
             setattr(self, k, v)
+
+
+def _saga_data(saga: SagaMembership | None) -> dict | None:
+    if saga is None:
+        return None
+    return {"name": saga.name, "volume": saga.volume}
 
 
 def _template_context(request: Request, **extra):
@@ -62,6 +71,7 @@ async def book_list(
                 "rating": b.rating,
                 "tags": b.tags,
                 "opinion": b.opinion,
+                "saga": _saga_data(b.saga),
             }
         )
         for b in books
@@ -105,6 +115,7 @@ async def book_detail(
                     {"start_date": rp.start_date, "end_date": rp.end_date}
                     for rp in collection_book.reading_periods
                 ],
+                "saga": _saga_data(collection_book.saga),
                 "in_collection": True,
                 "isbn_13_resolved": isbn_13,
             }
@@ -143,6 +154,7 @@ async def book_detail(
                 "tags": [],
                 "opinion": None,
                 "reading_periods": [],
+                "saga": None,
                 "in_collection": False,
                 "isbn_13_resolved": isbn_13,
             }

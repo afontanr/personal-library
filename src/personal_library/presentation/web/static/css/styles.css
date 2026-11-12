@@ -296,6 +296,14 @@ body::before {
   margin-bottom: 0.5rem;
 }
 
+.book-card__saga {
+  font-family: var(--font-ui);
+  font-size: 0.7rem;
+  font-style: italic;
+  color: var(--warm-gray);
+  margin-bottom: 0.5rem;
+}
+
 .book-card__date {
   margin-top: auto;
   font-family: var(--font-ui);
