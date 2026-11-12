@@ -29,6 +29,14 @@ def _author_sort_key(book: CollectionBook) -> tuple:
     return (0, author, 0 if date else 1, date, title)
 
 
+def sort_books(
+    books: list[CollectionBook], order: CollectionOrder
+) -> list[CollectionBook]:
+    if order is CollectionOrder.AUTHOR:
+        return sorted(books, key=_author_sort_key)
+    return books
+
+
 class ListCollection:
     def __init__(self, collection_repository: CollectionRepository) -> None:
         self._collection_repository = collection_repository
@@ -37,6 +45,5 @@ class ListCollection:
         self, order: CollectionOrder = CollectionOrder.DEFAULT
     ) -> list[CollectionBook]:
         books = await self._collection_repository.find_all()
-        if order is CollectionOrder.AUTHOR:
-            return sorted(books, key=_author_sort_key)
-        return books
+        owned = [b for b in books if not b.is_to_buy]
+        return sort_books(owned, order)
