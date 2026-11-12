@@ -51,8 +51,16 @@ async def save_book(
             )
             for rp in body.reading_periods
         ],
+        saga=(
+            SaveBookInput.SagaInput(name=body.saga.name, volume=body.saga.volume)
+            if body.saga
+            else None
+        ),
     )
-    result = await use_case.execute(book_input)
+    try:
+        result = await use_case.execute(book_input)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     return CollectionBookResponse.from_book(result)
 
 

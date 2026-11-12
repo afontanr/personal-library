@@ -16,6 +16,127 @@
     localStorage.setItem(`${STORAGE_PREFIX}${isbn}_${key}`, JSON.stringify(value));
   }
 
+  /* ─────────────── SAGA ─────────────── */
+
+  function normalizeText(text) {
+    return text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+  }
+
+  function getSagaState(isbn) {
+    var saga = getBookData(isbn, 'saga');
+    return saga && saga.name ? saga : null;
+  }
+
+  function initSaga(isbn) {
+    var nameInput = document.getElementById('saga-input');
+    var suggestions = document.getElementById('saga-suggestions');
+    var volumeInput = document.getElementById('saga-volume-input');
+    var removeBtn = document.getElementById('saga-remove-btn');
+    if (!nameInput || !suggestions || !volumeInput || !removeBtn) return;
+
+    var knownSagas = [];
+
+    function save(name, volume) {
+      setBookData(isbn, 'saga', name ? { name: name, volume: volume } : null);
+    }
+
+    function currentVolume() {
+      var raw = volumeInput.value.trim();
+      if (raw === '') return null;
+      var value = parseFloat(raw);
+      return isNaN(value) || value < 0 ? null : value;
+    }
+
+    function syncControls() {
+      var hasName = nameInput.value.trim() !== '';
+      volumeInput.disabled = !hasName;
+      removeBtn.hidden = !hasName;
+      if (!hasName) volumeInput.value = '';
+    }
+
+    function hideSuggestions() {
+      suggestions.hidden = true;
+      suggestions.replaceChildren();
+    }
+
+    function choose(name) {
+      nameInput.value = name;
+      hideSuggestions();
+      syncControls();
+      save(name, currentVolume());
+      volumeInput.focus();
+    }
+
+    function addOption(label, name, isCreate) {
+      var li = document.createElement('li');
+      li.className = 'saga-suggestions__option' + (isCreate ? ' saga-suggestions__option--create' : '');
+      li.textContent = label;
+      li.addEventListener('mousedown', function (e) {
+        e.preventDefault();
+        choose(name);
+      });
+      suggestions.appendChild(li);
+    }
+
+    function renderSuggestions() {
+      var typed = nameInput.value.trim();
+      var query = normalizeText(typed);
+      suggestions.replaceChildren();
+      if (!query) {
+        hideSuggestions();
+        return;
+      }
+      var exact = false;
+      knownSagas.forEach(function (saga) {
+        var normalized = normalizeText(saga.name);
+        if (normalized.includes(query)) addOption(saga.name, saga.name, false);
+        if (normalized === query) exact = true;
+      });
+      if (!exact) addOption('Crear saga «' + typed + '»', typed, true);
+      suggestions.hidden = false;
+    }
+
+    var initial = getSagaState(isbn);
+    if (initial) {
+      nameInput.value = initial.name;
+      volumeInput.value = initial.volume === null || initial.volume === undefined ? '' : String(initial.volume);
+    }
+    syncControls();
+
+    fetch('/api/sagas')
+      .then(function (response) { return response.ok ? response.json() : []; })
+      .then(function (sagas) { knownSagas = sagas; })
+      .catch(function () { knownSagas = []; });
+
+    nameInput.addEventListener('input', function () {
+      syncControls();
+      save(nameInput.value.trim(), currentVolume());
+      renderSuggestions();
+    });
+    nameInput.addEventListener('focus', renderSuggestions);
+    nameInput.addEventListener('blur', hideSuggestions);
+    nameInput.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') hideSuggestions();
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        var first = suggestions.querySelector('.saga-suggestions__option');
+        if (first && !suggestions.hidden) first.dispatchEvent(new MouseEvent('mousedown'));
+      }
+    });
+
+    volumeInput.addEventListener('input', function () {
+      save(nameInput.value.trim(), currentVolume());
+    });
+
+    removeBtn.addEventListener('click', function () {
+      nameInput.value = '';
+      volumeInput.value = '';
+      hideSuggestions();
+      syncControls();
+      save('', null);
+    });
+  }
+
   /* ─────────────── STAR RATING ─────────────── */
 
   function initRating(isbn) {
@@ -325,6 +446,7 @@
     }
 
     var readingDates = getBookData(isbn, 'reading_dates') || [];
+    var saga = getSagaState(isbn);
 
     return {
       isbn_13: isbn,
@@ -340,7 +462,8 @@
       opinion: getBookData(isbn, 'opinion') || null,
       reading_periods: readingDates.map(function (entry) {
         return { start_date: entry.start || null, end_date: entry.end || null };
-      })
+      }),
+      saga: saga ? { name: saga.name, volume: saga.volume } : null
     };
   }
 
@@ -598,6 +721,7 @@
     initBookDetail: function (isbn) {
       initRating(isbn);
       initTags(isbn);
+      initSaga(isbn);
       initOpinion(isbn);
       initReadingDates(isbn);
       initSaveButton(isbn);

@@ -4,6 +4,7 @@ from httpx import ASGITransport, AsyncClient
 from personal_library.domain.model.collection_book import (
     CollectionBook,
 )
+from personal_library.domain.model.saga import SagaMembership
 from personal_library.domain.ports.collection_repository import CollectionRepository
 from personal_library.main import create_app
 from personal_library.presentation.api.dependencies import (
@@ -327,3 +328,58 @@ async def test_get_collection_book_returns_404_when_not_saved():
         response = await client.get("/api/collection/9780000000002")
 
     assert response.status_code == 404
+
+
+# ─── Sagas ───
+
+BASE = {"isbn_13": "9780000000001", "title": "Dune", "authors": ["Frank Herbert"]}
+
+
+@pytest.fixture
+async def saga_client():
+    fake_repo = FakeCollectionRepository()
+    app = create_app()
+    app.dependency_overrides[get_collection_repository] = lambda: fake_repo
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        yield client, fake_repo
+
+
+async def test_save_book_with_saga_returns_saga(saga_client):
+    client, _ = saga_client
+    response = await client.post(
+        "/api/collection", json={**BASE, "saga": {"name": "Dune", "volume": 1}}
+    )
+    assert response.status_code == 201
+    assert response.json()["saga"] == {"id": None, "name": "Dune", "volume": 1.0}
+
+
+async def test_save_book_without_saga_returns_null_saga(saga_client):
+    client, _ = saga_client
+    response = await client.post("/api/collection", json=BASE)
+    assert response.json()["saga"] is None
+
+
+@pytest.mark.parametrize(
+    "saga",
+    [{"name": "   ", "volume": 2}, {"name": "Dune", "volume": -1}, {"volume": 2}],
+)
+async def test_save_book_with_invalid_saga_returns_422(saga_client, saga):
+    client, fake_repo = saga_client
+    response = await client.post("/api/collection", json={**BASE, "saga": saga})
+    assert response.status_code == 422
+    assert await fake_repo.find_all() == []
+
+
+async def test_list_collection_includes_saga(saga_client):
+    client, fake_repo = saga_client
+    await fake_repo.save(
+        CollectionBook(
+            **BASE,
+            added_at="2026-11-12T10:00:00",
+            saga=SagaMembership("Dune", 3.5, saga_id=7),
+        )
+    )
+    response = await client.get("/api/collection")
+    assert response.json()[0]["saga"] == {"id": 7, "name": "Dune", "volume": 3.5}

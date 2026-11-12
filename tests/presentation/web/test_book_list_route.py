@@ -4,6 +4,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from personal_library.domain.model.collection_book import CollectionBook
+from personal_library.domain.model.saga import SagaMembership
 from personal_library.domain.ports.collection_repository import CollectionRepository
 from personal_library.main import create_app
 from personal_library.presentation.api.dependencies import get_collection_repository
@@ -105,3 +106,37 @@ async def test_book_list_excludes_to_buy_books():
     assert "Deseado" not in text
     assert '<span class="book-count">1</span>' in text
     assert 'id="empty-state-template"' in text
+
+
+def _saga_book(saga: SagaMembership) -> CollectionBook:
+    return CollectionBook(
+        isbn_13="9780000000003",
+        title="Libro",
+        authors=["Autor"],
+        added_at="2026-05-10T10:00:00",
+        saga=saga,
+    )
+
+
+async def test_card_shows_saga_and_volume():
+    text = await _get("/", [_saga_book(SagaMembership("El Señor de los Anillos", 2.0))])
+
+    assert "El Señor de los Anillos · 2</p>" in text
+
+
+async def test_card_shows_saga_without_volume():
+    text = await _get("/", [_saga_book(SagaMembership("Dune"))])
+
+    assert 'class="book-card__saga">Dune</p>' in text
+
+
+async def test_card_shows_volume_zero():
+    text = await _get("/", [_saga_book(SagaMembership("Dune", 0.0))])
+
+    assert "Dune · 0</p>" in text
+
+
+async def test_card_without_saga_has_no_saga_line():
+    text = await _get("/", BOOKS)
+
+    assert "book-card__saga" not in text

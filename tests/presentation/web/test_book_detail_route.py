@@ -2,6 +2,7 @@ from httpx import ASGITransport, AsyncClient
 
 from personal_library.domain.model.book import BookInfo
 from personal_library.domain.model.collection_book import CollectionBook
+from personal_library.domain.model.saga import SagaMembership
 from personal_library.domain.ports.collection_repository import CollectionRepository
 from personal_library.main import create_app
 from personal_library.presentation.api.dependencies import (
@@ -102,3 +103,24 @@ async def test_unsaved_book_detail_offers_both_actions():
     assert 'id="save-to-buy-btn"' in text
     assert "Añadir a futuras compras" in text
     assert 'data-to-buy="false"' in text
+
+
+async def test_detail_renders_saga_section_and_preloads_saga():
+    book = CollectionBook(
+        isbn_13=ISBN,
+        title="Dune",
+        authors=["Frank Herbert"],
+        added_at="2026-05-10T10:00:00",
+        saga=SagaMembership("Dune", 1.0, saga_id=3),
+    )
+    text = await _get([book])
+
+    assert 'id="saga-section"' in text
+    assert '"name": "Dune"' in text
+    assert '"volume": 1.0' in text
+
+
+async def test_detail_of_book_not_in_collection_clears_stale_saga():
+    text = await _get([])
+
+    assert "localStorage.removeItem('pl_' + isbn + '_saga');" in text

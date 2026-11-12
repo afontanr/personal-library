@@ -1,9 +1,12 @@
+import asyncio
+
 import pytest
 
 from personal_library.domain.model.collection_book import (
     CollectionBook,
     ReadingPeriod,
 )
+from personal_library.domain.model.saga import SagaMembership
 from personal_library.infrastructure.adapters.db.sqlite_collection_repository import (
     SqliteCollectionRepository,
 )
@@ -332,3 +335,100 @@ async def test_save_updates_added_at():
         assert found.added_at == "2026-11-12T10:00:00"
     finally:
         await repo.close()
+
+
+# ─── Sagas ───
+
+
+def _book(isbn_13: str, saga: SagaMembership | None = None) -> CollectionBook:
+    return CollectionBook(
+        isbn_13=isbn_13,
+        title=f"Libro {isbn_13}",
+        authors=["Autor"],
+        added_at="2026-11-12T10:00:00",
+        saga=saga,
+    )
+
+
+@pytest.fixture
+async def repo():
+    repository = SqliteCollectionRepository(database_path=TEST_DB)
+    await repository.initialize()
+    yield repository
+    await repository.close()
+
+
+async def test_save_book_with_saga_round_trips(repo):
+    await repo.save(
+        _book("9780000000001", SagaMembership("El Señor de los Anillos", 2))
+    )
+    found = await repo.find_by_isbn("9780000000001")
+    assert found.saga.name == "El Señor de los Anillos"
+    assert found.saga.volume == 2
+    assert isinstance(found.saga.saga_id, int)
+
+
+async def test_book_without_saga_reads_none(repo):
+    await repo.save(_book("9780000000001"))
+    assert (await repo.find_by_isbn("9780000000001")).saga is None
+
+
+async def test_same_normalized_name_reuses_saga_and_keeps_first_spelling(repo):
+    await repo.save(
+        _book("9780000000001", SagaMembership("El Señor de los Anillos", 1))
+    )
+    await repo.save(
+        _book("9780000000002", SagaMembership("  el senor de los ANILLOS ", 2))
+    )
+    sagas = await repo.find_all_sagas()
+    assert [s.name for s in sagas] == ["El Señor de los Anillos"]
+    second = await repo.find_by_isbn("9780000000002")
+    assert second.saga.name == "El Señor de los Anillos"
+    assert second.saga.saga_id == sagas[0].id
+
+
+async def test_find_all_includes_saga(repo):
+    await repo.save(_book("9780000000001", SagaMembership("Dune", 0)))
+    [book] = await repo.find_all()
+    assert book.saga.name == "Dune"
+    assert book.saga.volume == 0
+
+
+async def test_changing_saga_removes_orphan(repo):
+    await repo.save(_book("9780000000001", SagaMembership("A")))
+    await repo.save(_book("9780000000001", SagaMembership("B")))
+    assert [s.name for s in await repo.find_all_sagas()] == ["B"]
+
+
+async def test_removing_saga_from_book_removes_orphan(repo):
+    await repo.save(_book("9780000000001", SagaMembership("A")))
+    await repo.save(_book("9780000000001"))
+    assert await repo.find_all_sagas() == []
+
+
+async def test_deleting_books_keeps_saga_until_last_one(repo):
+    await repo.save(_book("9780000000001", SagaMembership("A", 1)))
+    await repo.save(_book("9780000000002", SagaMembership("A", 2)))
+    await repo.delete("9780000000001")
+    assert [s.name for s in await repo.find_all_sagas()] == ["A"]
+    await repo.delete("9780000000002")
+    assert await repo.find_all_sagas() == []
+
+
+async def test_find_all_sagas_sorted_ignoring_case_and_accents(repo):
+    for i, name in enumerate(["zeta", "Él", "alfa"], start=1):
+        await repo.save(_book(f"978000000000{i}", SagaMembership(name)))
+    assert [s.name for s in await repo.find_all_sagas()] == ["alfa", "Él", "zeta"]
+
+
+async def test_concurrent_writes_do_not_abort_each_other(repo):
+    await repo.save(_book("9780000000001", SagaMembership("A")))
+
+    await asyncio.gather(
+        repo.save(_book("9780000000002", SagaMembership("B"))),
+        repo.delete("9780000000001"),
+        repo.save(_book("9780000000003", SagaMembership("C"))),
+    )
+
+    assert await repo.find_by_isbn("9780000000001") is None
+    assert [s.name for s in await repo.find_all_sagas()] == ["B", "C"]
