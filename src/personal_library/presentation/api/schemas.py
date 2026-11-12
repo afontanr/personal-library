@@ -2,6 +2,8 @@ from typing import Annotated
 
 from pydantic import BaseModel, Field, StringConstraints
 
+from personal_library.domain.model.collection_book import CollectionBook
+
 
 class BookInfoResponse(BaseModel):
     isbn_13: str
@@ -65,3 +67,31 @@ class CollectionBookResponse(BaseModel):
     added_at: str
     reading_periods: list[ReadingPeriodRequest]
     saga: SagaResponse | None = None
+
+    @classmethod
+    def from_book(cls, book: CollectionBook) -> "CollectionBookResponse":
+        return cls(
+            isbn_13=book.isbn_13,
+            isbn_10=book.isbn_10,
+            title=book.title,
+            authors=book.authors,
+            description=book.description,
+            published_date=book.published_date,
+            cover_image_url=book.cover_image_url,
+            status=book.status,
+            rating=book.rating,
+            tags=book.tags,
+            opinion=book.opinion,
+            added_at=book.added_at,
+            reading_periods=[
+                ReadingPeriodRequest(start_date=rp.start_date, end_date=rp.end_date)
+                for rp in book.reading_periods
+            ],
+            saga=(
+                SagaResponse(
+                    id=book.saga.saga_id, name=book.saga.name, volume=book.saga.volume
+                )
+                if book.saga
+                else None
+            ),
+        )

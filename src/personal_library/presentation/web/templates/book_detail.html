@@ -3,15 +3,15 @@
 {% block title %}{{ book.title }} — Biblioteca Personal{% endblock %}
 
 {% block content %}
-<a href="{{ url_for('book_list') }}" class="back-link">
+<a href="{{ url_for('to_buy_list' if book.is_to_buy else 'book_list') }}" class="back-link">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <line x1="19" y1="12" x2="5" y2="12"></line>
     <polyline points="12 19 5 12 12 5"></polyline>
   </svg>
-  Volver a la colección
+  {{ 'Volver a futuras compras' if book.is_to_buy else 'Volver a la colección' }}
 </a>
 
-<article class="book-detail">
+<article class="book-detail" data-to-buy="{{ 'true' if book.is_to_buy else 'false' }}">
   <!-- Cover Column -->
   <div class="book-detail__cover-col">
     <div class="book-detail__cover-frame">
@@ -83,6 +83,7 @@
         <option value="reading" {% if book.status == 'reading' %}selected{% endif %}>Leyendo</option>
         <option value="read" {% if book.status == 'read' %}selected{% endif %}>Leído</option>
         <option value="unfinished" {% if book.status == 'unfinished' %}selected{% endif %}>Inacabado</option>
+        <option value="to_buy" {% if book.status == 'to_buy' %}selected{% endif %}>Por comprar</option>
       </select>
     </div>
 
@@ -146,6 +147,7 @@
       </div>
     </section>
 
+    {% if not book.is_to_buy %}
     <!-- Rating -->
     <section class="detail-section" id="rating-section">
       <h2 class="detail-section__title">Valoración</h2>
@@ -194,6 +196,8 @@
       </div>
     </section>
 
+    {% endif %}
+
     <!-- Save + Delete Section -->
     <section class="detail-section" style="margin-top: 2rem; border-top: 1px solid var(--color-gold-light); padding-top: 1.5rem;">
       {% if book.in_collection %}
@@ -201,21 +205,31 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="20 6 9 17 4 12"></polyline>
         </svg>
-        En tu colección
+        {{ 'En futuras compras' if book.is_to_buy else 'En tu colección' }}
       </div>
-      <div style="margin-top: 1rem; display: flex; gap: 0.75rem; align-items: center;">
+      <div style="margin-top: 1rem; display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
         <button type="button" class="save-button" id="save-book-btn" data-isbn="{{ book.isbn_13 }}" data-in-collection="true" data-isbn10="{{ book.isbn_10 or '' }}">
           Guardar cambios
         </button>
-        <button type="button" class="save-button save-button--danger" id="delete-book-btn" data-isbn="{{ book.isbn_13 }}" data-title="{{ book.title }}">
+        {% if book.is_to_buy %}
+        <button type="button" class="save-button" id="purchase-book-btn">
+          Lo he comprado
+        </button>
+        {% endif %}
+        <button type="button" class="save-button save-button--danger" id="delete-book-btn" data-isbn="{{ book.isbn_13 }}" data-title="{{ book.title }}" data-return-url="{{ url_for('to_buy_list' if book.is_to_buy else 'book_list').path }}" data-list-label="{{ 'tus futuras compras' if book.is_to_buy else 'tu coleccion' }}">
           Eliminar
         </button>
       </div>
       <p class="save-status-message" id="save-status-message"></p>
       {% else %}
-      <button type="button" class="save-button" id="save-book-btn" data-isbn="{{ book.isbn_13_resolved or book.isbn_13 }}" data-in-collection="false" data-isbn10="{{ book.isbn_10 or '' }}">
-        Añadir a mi colección
-      </button>
+      <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+        <button type="button" class="save-button" id="save-book-btn" data-isbn="{{ book.isbn_13_resolved or book.isbn_13 }}" data-in-collection="false" data-isbn10="{{ book.isbn_10 or '' }}">
+          Añadir a mi colección
+        </button>
+        <button type="button" class="save-button" id="save-to-buy-btn">
+          Añadir a futuras compras
+        </button>
+      </div>
       <p class="save-status-message" id="save-status-message"></p>
       {% endif %}
     </section>

@@ -2,6 +2,8 @@ from dataclasses import dataclass, field
 
 from personal_library.domain.model.saga import SagaMembership
 
+TO_BUY_STATUS = "to_buy"
+
 
 @dataclass(frozen=True)
 class ReadingPeriod:
@@ -25,3 +27,7 @@ class CollectionBook:
     opinion: str | None = None
     reading_periods: list[ReadingPeriod] = field(default_factory=list)
     saga: SagaMembership | None = None
+
+    @property
+    def is_to_buy(self) -> bool:
+        return self.status == TO_BUY_STATUS

@@ -84,3 +84,17 @@ def test_collection_book_is_immutable():
     )
     with pytest.raises(dataclasses.FrozenInstanceError):
         book.title = "Other"  # type: ignore
+
+
+def test_is_to_buy():
+    def book(status: str) -> CollectionBook:
+        return CollectionBook(
+            isbn_13="9788466341172",
+            title="Medio Mundo",
+            authors=["Joe Abercrombie"],
+            added_at="2026-05-10T10:00:00",
+            status=status,
+        )
+
+    assert book("to_buy").is_to_buy is True
+    assert book("new").is_to_buy is False

@@ -313,6 +313,30 @@ async def test_delete_only_removes_target_book():
     assert remaining[0].isbn_13 == "9780451524935"
 
 
+@pytest.mark.asyncio
+async def test_save_updates_added_at():
+    repo = SqliteCollectionRepository(database_path=TEST_DB)
+    await repo.initialize()
+
+    def book(added_at: str) -> CollectionBook:
+        return CollectionBook(
+            isbn_13="9788466341172",
+            title="Medio Mundo",
+            authors=["Joe Abercrombie"],
+            added_at=added_at,
+        )
+
+    try:
+        await repo.save(book("2026-05-10T10:00:00"))
+        await repo.save(book("2026-11-12T10:00:00"))
+
+        found = await repo.find_by_isbn("9788466341172")
+        assert found is not None
+        assert found.added_at == "2026-11-12T10:00:00"
+    finally:
+        await repo.close()
+
+
 # ─── Sagas ───
 
 

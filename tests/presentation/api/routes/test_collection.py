@@ -266,6 +266,70 @@ async def test_delete_book_returns_422_for_invalid_isbn():
     assert response.status_code == 422
 
 
+@pytest.mark.asyncio
+async def test_list_collection_excludes_to_buy_books():
+    fake_repo = FakeCollectionRepository()
+    fake_repo._books["9780000000001"] = CollectionBook(
+        isbn_13="9780000000001",
+        title="Mío",
+        authors=["Ana"],
+        added_at="2026-05-10T10:00:00",
+    )
+    fake_repo._books["9780000000002"] = CollectionBook(
+        isbn_13="9780000000002",
+        title="Deseado",
+        authors=["Zoe"],
+        added_at="2026-05-15T10:00:00",
+        status="to_buy",
+    )
+    app = create_app()
+    app.dependency_overrides[get_collection_repository] = lambda: fake_repo
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        response = await client.get("/api/collection")
+
+    assert response.status_code == 200
+    assert [b["isbn_13"] for b in response.json()] == ["9780000000001"]
+
+
+@pytest.mark.asyncio
+async def test_get_collection_book_returns_saved_book():
+    fake_repo = FakeCollectionRepository()
+    fake_repo._books["9780000000002"] = CollectionBook(
+        isbn_13="9780000000002",
+        title="Deseado",
+        authors=["Zoe"],
+        added_at="2026-05-15T10:00:00",
+        status="to_buy",
+    )
+    app = create_app()
+    app.dependency_overrides[get_collection_repository] = lambda: fake_repo
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        response = await client.get("/api/collection/9780000000002")
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "to_buy"
+
+
+@pytest.mark.asyncio
+async def test_get_collection_book_returns_404_when_not_saved():
+    app = create_app()
+    fake_repo = FakeCollectionRepository()
+    app.dependency_overrides[get_collection_repository] = lambda: fake_repo
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        response = await client.get("/api/collection/9780000000002")
+
+    assert response.status_code == 404
+
+
 # ─── Sagas ───
 
 BASE = {"isbn_13": "9780000000001", "title": "Dune", "authors": ["Frank Herbert"]}

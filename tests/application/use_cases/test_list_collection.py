@@ -136,3 +136,24 @@ async def test_books_without_author_go_last_sorted_by_title():
         "Beta",
         "Zeta",
     ]
+
+
+async def test_excludes_to_buy_books():
+    books = [
+        CollectionBook(
+            isbn_13="9780000000001",
+            title="Mío",
+            authors=["Ana"],
+            added_at="2026-01-01T00:00:01",
+        ),
+        CollectionBook(
+            isbn_13="9780000000002",
+            title="Deseado",
+            authors=["Zoe"],
+            added_at="2026-01-01T00:00:02",
+            status="to_buy",
+        ),
+    ]
+
+    for order in CollectionOrder:
+        assert await _titles(books, order) == ["Mío"]

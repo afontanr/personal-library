@@ -98,7 +98,23 @@
     saveForm.style.display = 'none';
     coverPreview.style.display = 'none';
 
-    fetch('/api/books/' + encodeURIComponent(isbn))
+    // A book already saved (in the collection or in futuras compras) opens
+    // its own page, so scanning never overwrites it from this form.
+    fetch('/api/collection/' + encodeURIComponent(isbn))
+      .then(function (response) {
+        if (response.ok) {
+          window.location.href = '/book/' + encodeURIComponent(isbn);
+          return null;
+        }
+        return lookupCatalog(isbn);
+      })
+      .catch(function () {
+        return lookupCatalog(isbn);
+      });
+  }
+
+  function lookupCatalog(isbn) {
+    return fetch('/api/books/' + encodeURIComponent(isbn))
       .then(function (response) {
         if (!response.ok) {
           if (response.status === 404) {
@@ -152,12 +168,13 @@
     saveForm.style.display = 'block';
   }
 
-  saveForm.addEventListener('submit', function (e) {
-    e.preventDefault();
-
+  function saveScannedBook(statusOverride, triggerBtn) {
     var saveBtn = document.getElementById('scan-save-btn');
+    var toBuyBtn = document.getElementById('scan-to-buy-btn');
+    var idleLabel = triggerBtn.textContent;
     saveBtn.disabled = true;
-    saveBtn.textContent = 'Guardando...';
+    if (toBuyBtn) toBuyBtn.disabled = true;
+    triggerBtn.textContent = 'Guardando...';
     saveStatus.textContent = '';
     saveStatus.className = 'save-status-message';
 
@@ -170,7 +187,8 @@
         return s.trim();
       })
       .filter(Boolean);
-    var status = document.getElementById('scan-status-select').value;
+    var status =
+      statusOverride || document.getElementById('scan-status-select').value;
     var description =
       document.getElementById('scan-description-area').value.trim() || null;
 
@@ -199,15 +217,28 @@
         return response.json();
       })
       .then(function () {
-        window.location.href = '/';
+        window.location.href = status === 'to_buy' ? '/futuras-compras' : '/';
       })
       .catch(function (err) {
         saveStatus.textContent = err.message;
         saveStatus.className = 'save-status-message is-error';
         saveBtn.disabled = false;
-        saveBtn.textContent = 'Guardar en mi colección';
+        if (toBuyBtn) toBuyBtn.disabled = false;
+        triggerBtn.textContent = idleLabel;
       });
+  }
+
+  saveForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    saveScannedBook(null, document.getElementById('scan-save-btn'));
   });
+
+  var scanToBuyBtn = document.getElementById('scan-to-buy-btn');
+  if (scanToBuyBtn) {
+    scanToBuyBtn.addEventListener('click', function () {
+      saveScannedBook('to_buy', scanToBuyBtn);
+    });
+  }
 
   var anotherBtn = document.getElementById('scan-another-btn');
   if (anotherBtn) {

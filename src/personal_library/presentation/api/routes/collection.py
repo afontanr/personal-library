@@ -12,48 +12,19 @@ from personal_library.application.use_cases.save_book import (
     SaveBookToCollection,
 )
 from personal_library.domain.exceptions import BookNotFoundError
-from personal_library.domain.model.collection_book import CollectionBook
+from personal_library.domain.ports.collection_repository import CollectionRepository
 from personal_library.presentation.api.dependencies import (
+    get_collection_repository,
     get_delete_book_use_case,
     get_list_collection_use_case,
     get_save_book_use_case,
 )
 from personal_library.presentation.api.schemas import (
     CollectionBookResponse,
-    ReadingPeriodRequest,
-    SagaResponse,
     SaveBookRequest,
 )
 
 router = APIRouter(prefix="/api/collection", tags=["collection"])
-
-
-def _to_response(book: CollectionBook) -> CollectionBookResponse:
-    return CollectionBookResponse(
-        isbn_13=book.isbn_13,
-        isbn_10=book.isbn_10,
-        title=book.title,
-        authors=book.authors,
-        description=book.description,
-        published_date=book.published_date,
-        cover_image_url=book.cover_image_url,
-        status=book.status,
-        rating=book.rating,
-        tags=book.tags,
-        opinion=book.opinion,
-        added_at=book.added_at,
-        reading_periods=[
-            ReadingPeriodRequest(start_date=rp.start_date, end_date=rp.end_date)
-            for rp in book.reading_periods
-        ],
-        saga=(
-            SagaResponse(
-                id=book.saga.saga_id, name=book.saga.name, volume=book.saga.volume
-            )
-            if book.saga
-            else None
-        ),
-    )
 
 
 @router.post("", status_code=201, response_model=CollectionBookResponse)
@@ -90,7 +61,7 @@ async def save_book(
         result = await use_case.execute(book_input)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
-    return _to_response(result)
+    return CollectionBookResponse.from_book(result)
 
 
 @router.get("", response_model=list[CollectionBookResponse])
@@ -99,7 +70,22 @@ async def list_collection(
     use_case: ListCollection = Depends(get_list_collection_use_case),
 ) -> list[CollectionBookResponse]:
     books = await use_case.execute(CollectionOrder.from_param(orden))
-    return [_to_response(b) for b in books]
+    return [CollectionBookResponse.from_book(b) for b in books]
+
+
+@router.get(
+    "/{isbn}",
+    response_model=CollectionBookResponse,
+    responses={404: {"description": "Book not found"}},
+)
+async def get_collection_book(
+    isbn: str = Path(pattern=r"^\d{13}$"),
+    repo: CollectionRepository = Depends(get_collection_repository),
+) -> CollectionBookResponse:
+    book = await repo.find_by_isbn(isbn)
+    if book is None:
+        raise HTTPException(status_code=404, detail="Book not found")
+    return CollectionBookResponse.from_book(book)
 
 
 @router.delete(

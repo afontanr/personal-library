@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
 from personal_library.domain.model.collection_book import (
+    TO_BUY_STATUS,
     CollectionBook,
     ReadingPeriod,
 )
@@ -46,6 +47,19 @@ class SaveBookToCollection:
             for rp in book_input.reading_periods
         ]
 
+        existing = await self._collection_repository.find_by_isbn(book_input.isbn_13)
+        is_new = existing is None
+        is_purchase = (
+            existing is not None
+            and existing.is_to_buy
+            and book_input.status != TO_BUY_STATUS
+        )
+        added_at = (
+            datetime.now(UTC).isoformat()
+            if is_new or is_purchase
+            else existing.added_at
+        )
+
         saga = (
             SagaMembership(name=book_input.saga.name, volume=book_input.saga.volume)
             if book_input.saga
@@ -64,7 +78,7 @@ class SaveBookToCollection:
             rating=book_input.rating,
             tags=book_input.tags,
             opinion=book_input.opinion,
-            added_at=datetime.now(UTC).isoformat(),
+            added_at=added_at,
             reading_periods=reading_periods,
             saga=saga,
         )

@@ -3,78 +3,26 @@
 {% block title %}Colección — Biblioteca Personal{% endblock %}
 
 {% block content %}
+{% set list_label = 'tu coleccion' %}
+{% set list_route = 'book_list' %}
+{% set empty_title = 'Tu biblioteca está vacía' %}
+{% set empty_text = 'Escanea un código de barras o busca un libro por ISBN para empezar.' %}
 <section class="page-intro animate-in">
   <h1 class="page-intro__title">Mi <em>Colección</em></h1>
-  <p class="page-intro__subtitle">
+  <p class="page-intro__subtitle" data-count-label="en la biblioteca">
     <span class="book-count">{{ books|length }}</span> {{ 'libro' if books|length == 1 else 'libros' }} en la biblioteca
   </p>
   {% if books %}
-  {% set by_author = order == 'autor' %}
-  <nav class="sort-toggle" aria-label="Ordenar colección">
-    <a href="{{ url_for('book_list') }}" class="sort-toggle__option{% if not by_author %} sort-toggle__option--active{% endif %}"{% if not by_author %} aria-current="true"{% endif %}>Recientes</a>
-    <a href="{{ url_for('book_list') }}?orden=autor" class="sort-toggle__option{% if by_author %} sort-toggle__option--active{% endif %}"{% if by_author %} aria-current="true"{% endif %}>Autor</a>
-  </nav>
+  {% include "partials/sort_toggle.html" %}
   {% endif %}
 </section>
 
 {% if books %}
-<div class="book-grid">
-  {% for book in books %}
-  <div class="book-card" data-isbn="{{ book.isbn_13 }}" data-title="{{ book.title }}">
-    <button class="card-menu-trigger" aria-label="Menú" title="Menú">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-        <circle cx="12" cy="5" r="2"/>
-        <circle cx="12" cy="12" r="2"/>
-        <circle cx="12" cy="19" r="2"/>
-      </svg>
-    </button>
-    <div class="card-menu-dropdown">
-      <button type="button" class="card-menu-item card-menu-item--danger" data-action="delete">
-        Eliminar
-      </button>
-    </div>
-    <a href="{{ url_for('book_detail', isbn=book.isbn_13) }}" class="book-card__link">
-      <div class="book-card__cover-wrap">
-        {% if book.cover_image_url %}
-        <img
-          src="{{ book.cover_image_url }}"
-          alt="Portada de {{ book.title }}"
-          class="book-card__cover"
-          loading="lazy"
-        >
-        {% else %}
-        <div class="book-card__cover-placeholder">
-          {{ book.title[0] | upper if book.title else '?' }}
-        </div>
-        {% endif %}
-      </div>
-      <div class="book-card__info">
-        <h2 class="book-card__title">{{ book.title }}</h2>
-        <p class="book-card__authors">{{ book.authors | join(', ') }}</p>
-        {% if book.saga %}
-        <p class="book-card__saga">{{ book.saga.name }}{% if book.saga.volume is not none %} · {{ book.saga.volume | volume }}{% endif %}</p>
-        {% endif %}
-        <time class="book-card__date">{{ book.published_date or 'Fecha desconocida' }}</time>
-      </div>
-    </a>
-  </div>
-  {% endfor %}
-</div>
+{% include "partials/book_grid.html" %}
 {% else %}
-<div class="empty-state">
-  <div class="empty-state__icon">&#128218;</div>
-  <h2 class="empty-state__title">Tu biblioteca está vacía</h2>
-  <p class="empty-state__text">Escanea un código de barras o busca un libro por ISBN para empezar.</p>
-  <a href="{{ url_for('scan') }}" class="btn btn--primary btn--lg" style="margin-top: 1.25rem; display: inline-flex; align-items: center; gap: 0.5rem;">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M3 7V5a2 2 0 012-2h2"/>
-      <path d="M17 3h2a2 2 0 012 2v2"/>
-      <path d="M21 17v2a2 2 0 01-2 2h-2"/>
-      <path d="M7 21H5a2 2 0 01-2-2v-2"/>
-      <line x1="7" y1="12" x2="17" y2="12"/>
-    </svg>
-    Escanear un libro
-  </a>
-</div>
+{% include "partials/empty_state.html" %}
 {% endif %}
+<template id="empty-state-template">
+{% include "partials/empty_state.html" %}
+</template>
 {% endblock %}

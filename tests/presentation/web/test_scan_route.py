@@ -32,3 +32,17 @@ async def test_scan_route_loads_html5_qrcode():
     assert "html5-qrcode.min.js" in response.text
     assert "barcode-detector-polyfill" not in response.text
     assert "zbar-wasm" not in response.text
+
+
+@pytest.mark.asyncio
+async def test_scan_form_offers_futuras_compras():
+    app = create_app()
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        response = await client.get("/scan")
+
+    assert '<option value="to_buy">Por comprar</option>' in response.text
+    assert 'id="scan-to-buy-btn"' in response.text
+    assert "Añadir a futuras compras" in response.text

@@ -5,6 +5,7 @@ from fastapi import Depends, Request
 from personal_library.application.use_cases.delete_book import DeleteBookFromCollection
 from personal_library.application.use_cases.list_collection import ListCollection
 from personal_library.application.use_cases.list_sagas import ListSagas
+from personal_library.application.use_cases.list_to_buy import ListToBuy
 from personal_library.application.use_cases.lookup_book import LookupBookByIsbn
 from personal_library.application.use_cases.save_book import SaveBookToCollection
 from personal_library.domain.ports.book_repository import BookRepository
@@ -73,6 +74,12 @@ def get_list_collection_use_case(
     collection_repository: CollectionRepository = Depends(get_collection_repository),
 ) -> ListCollection:
     return ListCollection(collection_repository=collection_repository)
+
+
+def get_list_to_buy_use_case(
+    collection_repository: CollectionRepository = Depends(get_collection_repository),
+) -> ListToBuy:
+    return ListToBuy(collection_repository=collection_repository)
 
 
 def get_saga_repository(request: Request) -> SagaRepository:

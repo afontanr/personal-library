@@ -97,6 +97,7 @@ class SqliteCollectionRepository(CollectionRepository, SagaRepository):
                     rating = excluded.rating,
                     tags = excluded.tags,
                     opinion = excluded.opinion,
+                    added_at = excluded.added_at,
                     saga_id = excluded.saga_id,
                     saga_volume = excluded.saga_volume
                 """,

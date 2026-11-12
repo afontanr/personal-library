@@ -1,0 +1,5 @@
+{% set by_author = order == 'autor' %}
+<nav class="sort-toggle" aria-label="Ordenar libros">
+  <a href="{{ url_for(list_route) }}" class="sort-toggle__option{% if not by_author %} sort-toggle__option--active{% endif %}"{% if not by_author %} aria-current="true"{% endif %}>Recientes</a>
+  <a href="{{ url_for(list_route) }}?orden=autor" class="sort-toggle__option{% if by_author %} sort-toggle__option--active{% endif %}"{% if by_author %} aria-current="true"{% endif %}>Autor</a>
+</nav>
