@@ -6,9 +6,17 @@ from personal_library.domain.model.collection_book import (
     CollectionBook,
     ReadingPeriod,
 )
+from personal_library.domain.model.saga import Saga, SagaMembership
 from personal_library.domain.ports.collection_repository import CollectionRepository
+from personal_library.domain.ports.saga_repository import SagaRepository
 
 CREATE_TABLES_SQL = """
+CREATE TABLE IF NOT EXISTS sagas (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    name            TEXT NOT NULL,
+    normalized_name TEXT NOT NULL UNIQUE
+);
+
 CREATE TABLE IF NOT EXISTS collection_books (
     isbn_13         TEXT PRIMARY KEY,
     isbn_10         TEXT,
@@ -21,7 +29,9 @@ CREATE TABLE IF NOT EXISTS collection_books (
     rating          REAL,
     tags            TEXT,
     opinion         TEXT,
-    added_at        TEXT NOT NULL
+    added_at        TEXT NOT NULL,
+    saga_id         INTEGER REFERENCES sagas(id),
+    saga_volume     REAL
 );
 
 CREATE TABLE IF NOT EXISTS reading_periods (
@@ -32,8 +42,19 @@ CREATE TABLE IF NOT EXISTS reading_periods (
 );
 """
 
+DELETE_ORPHAN_SAGAS_SQL = """
+DELETE FROM sagas WHERE id NOT IN
+    (SELECT saga_id FROM collection_books WHERE saga_id IS NOT NULL)
+"""
 
-class SqliteCollectionRepository(CollectionRepository):
+SELECT_BOOKS_SQL = """
+SELECT collection_books.*, sagas.name AS saga_name
+FROM collection_books
+LEFT JOIN sagas ON sagas.id = collection_books.saga_id
+"""
+
+
+class SqliteCollectionRepository(CollectionRepository, SagaRepository):
     def __init__(self, database_path: str) -> None:
         self._database_path = database_path
         self._db: aiosqlite.Connection
@@ -48,13 +69,15 @@ class SqliteCollectionRepository(CollectionRepository):
     async def save(self, book: CollectionBook) -> None:
         await self._db.execute("BEGIN IMMEDIATE")
         try:
+            saga_id = await self._resolve_saga_id(book.saga)
+            saga_volume = book.saga.volume if book.saga else None
             await self._db.execute(
                 """
                 INSERT INTO collection_books
                     (isbn_13, isbn_10, title, authors, description,
                      published_date, cover_image_url, status, rating,
-                     tags, opinion, added_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     tags, opinion, added_at, saga_id, saga_volume)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(isbn_13) DO UPDATE SET
                     isbn_10 = excluded.isbn_10,
                     title = excluded.title,
@@ -65,7 +88,9 @@ class SqliteCollectionRepository(CollectionRepository):
                     status = excluded.status,
                     rating = excluded.rating,
                     tags = excluded.tags,
-                    opinion = excluded.opinion
+                    opinion = excluded.opinion,
+                    saga_id = excluded.saga_id,
+                    saga_volume = excluded.saga_volume
                 """,
                 (
                     book.isbn_13,
@@ -80,6 +105,8 @@ class SqliteCollectionRepository(CollectionRepository):
                     json.dumps(book.tags),
                     book.opinion,
                     book.added_at,
+                    saga_id,
+                    saga_volume,
                 ),
             )
 
@@ -95,21 +122,50 @@ class SqliteCollectionRepository(CollectionRepository):
                     (book.isbn_13, period.start_date, period.end_date),
                 )
 
+            await self._db.execute(DELETE_ORPHAN_SAGAS_SQL)
             await self._db.commit()
         except Exception:
             await self._db.execute("ROLLBACK")
             raise
 
     async def delete(self, isbn_13: str) -> None:
-        await self._db.execute(
-            "DELETE FROM collection_books WHERE isbn_13 = ?",
-            (isbn_13,),
+        await self._db.execute("BEGIN IMMEDIATE")
+        try:
+            await self._db.execute(
+                "DELETE FROM collection_books WHERE isbn_13 = ?",
+                (isbn_13,),
+            )
+            await self._db.execute(DELETE_ORPHAN_SAGAS_SQL)
+            await self._db.commit()
+        except Exception:
+            await self._db.execute("ROLLBACK")
+            raise
+
+    async def find_all_sagas(self) -> list[Saga]:
+        cursor = await self._db.execute(
+            "SELECT id, name FROM sagas ORDER BY normalized_name"
         )
-        await self._db.commit()
+        rows = await cursor.fetchall()
+        return [Saga(id=row["id"], name=row["name"]) for row in rows]
+
+    async def _resolve_saga_id(self, saga: SagaMembership | None) -> int | None:
+        if saga is None:
+            return None
+        await self._db.execute(
+            "INSERT INTO sagas (name, normalized_name) VALUES (?, ?)"
+            " ON CONFLICT(normalized_name) DO NOTHING",
+            (saga.name, saga.normalized_name),
+        )
+        cursor = await self._db.execute(
+            "SELECT id FROM sagas WHERE normalized_name = ?",
+            (saga.normalized_name,),
+        )
+        row = await cursor.fetchone()
+        return row["id"]
 
     async def find_by_isbn(self, isbn_13: str) -> CollectionBook | None:
         cursor = await self._db.execute(
-            "SELECT * FROM collection_books WHERE isbn_13 = ?",
+            SELECT_BOOKS_SQL + " WHERE collection_books.isbn_13 = ?",
             (isbn_13,),
         )
         row = await cursor.fetchone()
@@ -121,7 +177,7 @@ class SqliteCollectionRepository(CollectionRepository):
 
     async def find_all(self) -> list[CollectionBook]:
         cursor = await self._db.execute(
-            "SELECT * FROM collection_books ORDER BY added_at DESC"
+            SELECT_BOOKS_SQL + " ORDER BY collection_books.added_at DESC"
         )
         rows = await cursor.fetchall()
 
@@ -173,6 +229,15 @@ class SqliteCollectionRepository(CollectionRepository):
             opinion=row["opinion"],
             added_at=row["added_at"],
             reading_periods=periods,
+            saga=(
+                SagaMembership(
+                    name=row["saga_name"],
+                    volume=row["saga_volume"],
+                    saga_id=row["saga_id"],
+                )
+                if row["saga_id"] is not None
+                else None
+            ),
         )
 
     async def close(self) -> None:
