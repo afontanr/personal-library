@@ -1,3 +1,5 @@
+import asyncio
+
 import pytest
 
 from personal_library.domain.model.collection_book import (
@@ -393,3 +395,16 @@ async def test_find_all_sagas_sorted_ignoring_case_and_accents(repo):
     for i, name in enumerate(["zeta", "Él", "alfa"], start=1):
         await repo.save(_book(f"978000000000{i}", SagaMembership(name)))
     assert [s.name for s in await repo.find_all_sagas()] == ["alfa", "Él", "zeta"]
+
+
+async def test_concurrent_writes_do_not_abort_each_other(repo):
+    await repo.save(_book("9780000000001", SagaMembership("A")))
+
+    await asyncio.gather(
+        repo.save(_book("9780000000002", SagaMembership("B"))),
+        repo.delete("9780000000001"),
+        repo.save(_book("9780000000003", SagaMembership("C"))),
+    )
+
+    assert await repo.find_by_isbn("9780000000001") is None
+    assert [s.name for s in await repo.find_all_sagas()] == ["B", "C"]

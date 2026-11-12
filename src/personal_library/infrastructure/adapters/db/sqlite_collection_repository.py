@@ -1,3 +1,4 @@
+import asyncio
 import json
 
 import aiosqlite
@@ -58,6 +59,9 @@ class SqliteCollectionRepository(CollectionRepository, SagaRepository):
     def __init__(self, database_path: str) -> None:
         self._database_path = database_path
         self._db: aiosqlite.Connection
+        # One shared connection: serialize write transactions so they cannot
+        # interleave (a second BEGIN would fail and roll back the first).
+        self._write_lock = asyncio.Lock()
 
     async def initialize(self) -> None:
         self._db = await aiosqlite.connect(self._database_path)
@@ -67,6 +71,10 @@ class SqliteCollectionRepository(CollectionRepository, SagaRepository):
         await self._db.execute("PRAGMA foreign_keys = ON")
 
     async def save(self, book: CollectionBook) -> None:
+        async with self._write_lock:
+            await self._save(book)
+
+    async def _save(self, book: CollectionBook) -> None:
         await self._db.execute("BEGIN IMMEDIATE")
         try:
             saga_id = await self._resolve_saga_id(book.saga)
@@ -129,6 +137,10 @@ class SqliteCollectionRepository(CollectionRepository, SagaRepository):
             raise
 
     async def delete(self, isbn_13: str) -> None:
+        async with self._write_lock:
+            await self._delete(isbn_13)
+
+    async def _delete(self, isbn_13: str) -> None:
         await self._db.execute("BEGIN IMMEDIATE")
         try:
             await self._db.execute(
