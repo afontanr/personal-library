@@ -9,16 +9,19 @@ from personal_library.application.use_cases.list_collection import (
     CollectionOrder,
     ListCollection,
 )
+from personal_library.application.use_cases.list_to_buy import ListToBuy
 from personal_library.application.use_cases.lookup_book import (
     LookupBookByIsbn,
     to_isbn10,
     to_isbn13,
 )
 from personal_library.domain.exceptions import BookNotFoundError, BookRepositoryError
+from personal_library.domain.model.collection_book import CollectionBook
 from personal_library.domain.ports.collection_repository import CollectionRepository
 from personal_library.presentation.api.dependencies import (
     get_collection_repository,
     get_list_collection_use_case,
+    get_list_to_buy_use_case,
     get_lookup_book_use_case,
 )
 
@@ -40,15 +43,8 @@ def _template_context(request: Request, **extra):
     return {"request": request, "current_year": datetime.now().year, **extra}
 
 
-@web_router.get("/", response_class=HTMLResponse, name="book_list")
-async def book_list(
-    request: Request,
-    orden: str | None = None,
-    use_case: ListCollection = Depends(get_list_collection_use_case),
-):
-    order = CollectionOrder.from_param(orden)
-    books = await use_case.execute(order)
-    simple_books = [
+def _simple_books(books: list[CollectionBook]) -> list[SimpleBook]:
+    return [
         SimpleBook(
             {
                 "isbn_13": b.isbn_13,
@@ -66,10 +62,35 @@ async def book_list(
         )
         for b in books
     ]
+
+
+@web_router.get("/", response_class=HTMLResponse, name="book_list")
+async def book_list(
+    request: Request,
+    orden: str | None = None,
+    use_case: ListCollection = Depends(get_list_collection_use_case),
+):
+    order = CollectionOrder.from_param(orden)
+    books = await use_case.execute(order)
     return templates.TemplateResponse(
         request,
         "book_list.html",
-        _template_context(request, books=simple_books, order=order.value),
+        _template_context(request, books=_simple_books(books), order=order.value),
+    )
+
+
+@web_router.get("/futuras-compras", response_class=HTMLResponse, name="to_buy_list")
+async def to_buy_list(
+    request: Request,
+    orden: str | None = None,
+    use_case: ListToBuy = Depends(get_list_to_buy_use_case),
+):
+    order = CollectionOrder.from_param(orden)
+    books = await use_case.execute(order)
+    return templates.TemplateResponse(
+        request,
+        "to_buy_list.html",
+        _template_context(request, books=_simple_books(books), order=order.value),
     )
 
 

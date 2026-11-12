@@ -485,23 +485,18 @@
               var subtitle = document.querySelector('.page-intro__subtitle');
               if (subtitle) {
                 var remaining = document.querySelectorAll('.book-card').length;
-                subtitle.innerHTML = '<span class="book-count">' + remaining + '</span> ' + (remaining === 1 ? 'libro' : 'libros') + ' en la biblioteca';
+                var countLabel = subtitle.dataset.countLabel || 'en la biblioteca';
+                subtitle.innerHTML = '<span class="book-count">' + remaining + '</span> ' + (remaining === 1 ? 'libro' : 'libros') + ' ' + countLabel;
               }
               if (!document.querySelector('.book-card')) {
                 var sortToggle = document.querySelector('.sort-toggle');
                 if (sortToggle) sortToggle.remove();
                 var grid = document.querySelector('.book-grid');
+                var emptyTemplate = document.getElementById('empty-state-template');
                 if (grid) {
-                  grid.insertAdjacentHTML('afterend',
-                    '<div class="empty-state">' +
-                    '<div class="empty-state__icon">&#128218;</div>' +
-                    '<h2 class="empty-state__title">Tu biblioteca est\u00e1 vac\u00eda</h2>' +
-                    '<p class="empty-state__text">Escanea un c\u00f3digo de barras o busca un libro por ISBN para empezar.</p>' +
-                    '<a href="/scan" class="btn btn--primary btn--lg" style="margin-top: 1.25rem; display: inline-flex; align-items: center; gap: 0.5rem;">' +
-                    '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
-                    '<path d="M3 7V5a2 2 0 012-2h2"/><path d="M17 3h2a2 2 0 012 2v2"/><path d="M21 17v2a2 2 0 01-2 2h-2"/><path d="M7 21H5a2 2 0 01-2-2v-2"/><line x1="7" y1="12" x2="17" y2="12"/>' +
-                    '</svg>Escanear un libro</a></div>'
-                  );
+                  if (emptyTemplate) {
+                    grid.parentNode.insertBefore(emptyTemplate.content.cloneNode(true), grid.nextSibling);
+                  }
                   grid.remove();
                 }
               }

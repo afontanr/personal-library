@@ -90,3 +90,18 @@ async def test_book_list_empty_collection_hides_toggle():
     text = await _get("/", [])
 
     assert "sort-toggle" not in text
+
+
+async def test_book_list_excludes_to_buy_books():
+    wanted = CollectionBook(
+        isbn_13="9780000000009",
+        title="Deseado",
+        authors=["Ana"],
+        added_at="2026-05-20T10:00:00",
+        status="to_buy",
+    )
+    text = await _get("/", [BOOKS[0], wanted])
+
+    assert "Deseado" not in text
+    assert '<span class="book-count">1</span>' in text
+    assert 'id="empty-state-template"' in text

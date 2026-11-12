@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Futuras compras — Biblioteca Personal{% endblock %}
+
+{% block content %}
+{% set list_route = 'to_buy_list' %}
+{% set empty_title = 'No tienes futuras compras' %}
+{% set empty_text = 'Escanea un libro y pulsa «Añadir a futuras compras» para apuntarlo aquí.' %}
+<section class="page-intro animate-in">
+  <h1 class="page-intro__title">Futuras <em>compras</em></h1>
+  <p class="page-intro__subtitle" data-count-label="por comprar">
+    <span class="book-count">{{ books|length }}</span> {{ 'libro' if books|length == 1 else 'libros' }} por comprar
+  </p>
+  {% if books %}
+  {% include "partials/sort_toggle.html" %}
+  {% endif %}
+</section>
+
+{% if books %}
+{% include "partials/book_grid.html" %}
+{% else %}
+{% include "partials/empty_state.html" %}
+{% endif %}
+<template id="empty-state-template">
+{% include "partials/empty_state.html" %}
+</template>
+{% endblock %}
