@@ -1,14 +1,22 @@
 # Biblioteca Personal
 
-Catálogo personal de libros físicos: se identifican por ISBN, se guardan en una colección y se anotan con estado de lectura, valoración y opinión.
+Catálogo personal de libros físicos: se identifican por ISBN, se guardan en una colección y se anotan con estado de lectura, valoración y opinión. Aparte, se apuntan los libros que el usuario quiere comprar.
 
 ## Language
 
 ### Colección
 
 **Colección**:
-El conjunto de libros que el usuario ha guardado en su biblioteca personal.
+El conjunto de libros que el usuario posee y ha guardado en su biblioteca personal. No incluye las Futuras compras.
 _Avoid_: Biblioteca (como sinónimo de los datos), lista
+
+**Futuras compras**:
+Los libros que el usuario aún no posee pero quiere comprar. Están separados de la Colección y no tienen estado de lectura.
+_Avoid_: Lista de deseos, wishlist, pendientes (Pendiente es un estado de lectura)
+
+**Compra**:
+El paso de un libro de Futuras compras a la Colección. A partir de ese momento cuenta como añadido a la Colección.
+_Avoid_: Adquisición, mover
 
 **Autor principal**:
 El primer autor que figura en la lista de autores de un libro, tal como está escrito.
