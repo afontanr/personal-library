@@ -1,3 +1,4 @@
+import dataclasses
 from datetime import UTC, datetime
 
 import pytest
@@ -9,6 +10,7 @@ from personal_library.application.use_cases.save_book import (
 from personal_library.domain.model.collection_book import (
     CollectionBook,
 )
+from personal_library.domain.model.saga import SagaMembership
 from personal_library.domain.ports.collection_repository import CollectionRepository
 
 
@@ -119,3 +121,47 @@ async def test_save_book_defaults_empty_fields():
     assert result.description is None
     assert result.published_date is None
     assert result.cover_image_url is None
+
+
+def _input(saga: SaveBookInput.SagaInput | None = None) -> SaveBookInput:
+    return SaveBookInput(isbn_13="9780000000001", title="T", authors=["A"], saga=saga)
+
+
+async def test_save_book_with_saga_builds_membership():
+    repo = FakeCollectionRepository()
+    use_case = SaveBookToCollection(collection_repository=repo)
+
+    result = await use_case.execute(
+        _input(SaveBookInput.SagaInput(name="Dune", volume=1))
+    )
+
+    assert repo.saved[-1].saga == SagaMembership(name="Dune", volume=1)
+    assert result.saga.name == "Dune"
+
+
+async def test_save_book_returns_persisted_book():
+    class CanonicalizingRepository(FakeCollectionRepository):
+        async def find_by_isbn(self, isbn_13: str) -> CollectionBook | None:
+            book = await super().find_by_isbn(isbn_13)
+            return dataclasses.replace(
+                book,
+                saga=SagaMembership(name="El Señor de los Anillos", saga_id=1),
+            )
+
+    use_case = SaveBookToCollection(collection_repository=CanonicalizingRepository())
+
+    result = await use_case.execute(
+        _input(SaveBookInput.SagaInput(name="el senor de los anillos"))
+    )
+
+    assert result.saga.name == "El Señor de los Anillos"
+    assert result.saga.saga_id == 1
+
+
+async def test_save_book_rejects_blank_saga_name():
+    repo = FakeCollectionRepository()
+    use_case = SaveBookToCollection(collection_repository=repo)
+
+    with pytest.raises(ValueError):
+        await use_case.execute(_input(SaveBookInput.SagaInput(name="  ")))
+    assert repo.saved == []
