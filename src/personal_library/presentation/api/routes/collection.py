@@ -12,7 +12,9 @@ from personal_library.application.use_cases.save_book import (
     SaveBookToCollection,
 )
 from personal_library.domain.exceptions import BookNotFoundError
+from personal_library.domain.ports.collection_repository import CollectionRepository
 from personal_library.presentation.api.dependencies import (
+    get_collection_repository,
     get_delete_book_use_case,
     get_list_collection_use_case,
     get_save_book_use_case,
@@ -61,6 +63,21 @@ async def list_collection(
 ) -> list[CollectionBookResponse]:
     books = await use_case.execute(CollectionOrder.from_param(orden))
     return [CollectionBookResponse.from_book(b) for b in books]
+
+
+@router.get(
+    "/{isbn}",
+    response_model=CollectionBookResponse,
+    responses={404: {"description": "Book not found"}},
+)
+async def get_collection_book(
+    isbn: str = Path(pattern=r"^\d{13}$"),
+    repo: CollectionRepository = Depends(get_collection_repository),
+) -> CollectionBookResponse:
+    book = await repo.find_by_isbn(isbn)
+    if book is None:
+        raise HTTPException(status_code=404, detail="Book not found")
+    return CollectionBookResponse.from_book(book)
 
 
 @router.delete(
