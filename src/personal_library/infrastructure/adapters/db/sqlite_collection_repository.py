@@ -65,7 +65,8 @@ class SqliteCollectionRepository(CollectionRepository):
                     status = excluded.status,
                     rating = excluded.rating,
                     tags = excluded.tags,
-                    opinion = excluded.opinion
+                    opinion = excluded.opinion,
+                    added_at = excluded.added_at
                 """,
                 (
                     book.isbn_13,

@@ -13,23 +13,54 @@ from personal_library.domain.ports.collection_repository import CollectionReposi
 
 
 class FakeCollectionRepository(CollectionRepository):
-    def __init__(self):
-        self.saved: list[CollectionBook] = []
+    def __init__(self, books: list[CollectionBook] | None = None):
+        self._books: dict[str, CollectionBook] = {b.isbn_13: b for b in books or []}
+
+    @property
+    def saved(self) -> list[CollectionBook]:
+        return list(self._books.values())
 
     async def save(self, book: CollectionBook) -> None:
-        self.saved.append(book)
+        self._books[book.isbn_13] = book
 
     async def find_by_isbn(self, isbn_13: str) -> CollectionBook | None:
-        for b in self.saved:
-            if b.isbn_13 == isbn_13:
-                return b
-        return None
+        return self._books.get(isbn_13)
 
     async def find_all(self) -> list[CollectionBook]:
-        return list(self.saved)
+        return list(self._books.values())
 
     async def delete(self, isbn_13: str) -> None:
-        self.saved = [b for b in self.saved if b.isbn_13 != isbn_13]
+        self._books.pop(isbn_13, None)
+
+
+OLD_ADDED_AT = "2020-01-01T00:00:00+00:00"
+ISBN = "9788466341172"
+
+
+def _existing(status: str) -> CollectionBook:
+    return CollectionBook(
+        isbn_13=ISBN,
+        title="Medio Mundo",
+        authors=["Joe Abercrombie"],
+        added_at=OLD_ADDED_AT,
+        status=status,
+    )
+
+
+async def _resave(existing_status: str | None, new_status: str, tags=None):
+    books = [_existing(existing_status)] if existing_status else []
+    use_case = SaveBookToCollection(
+        collection_repository=FakeCollectionRepository(books)
+    )
+    return await use_case.execute(
+        SaveBookInput(
+            isbn_13=ISBN,
+            title="Medio Mundo",
+            authors=["Joe Abercrombie"],
+            status=new_status,
+            tags=tags or [],
+        )
+    )
 
 
 @pytest.mark.asyncio
@@ -119,3 +150,40 @@ async def test_save_book_defaults_empty_fields():
     assert result.description is None
     assert result.published_date is None
     assert result.cover_image_url is None
+
+
+async def test_resave_collection_book_keeps_added_at():
+    result = await _resave("read", "read", tags=["fantasy"])
+
+    assert result.added_at == OLD_ADDED_AT
+    assert result.tags == ["fantasy"]
+
+
+async def test_resave_to_buy_book_keeps_added_at():
+    result = await _resave("to_buy", "to_buy")
+
+    assert result.added_at == OLD_ADDED_AT
+    assert result.status == "to_buy"
+
+
+async def test_purchase_resets_added_at():
+    before = datetime.now(UTC).isoformat()
+
+    result = await _resave("to_buy", "new")
+
+    assert result.added_at >= before
+
+
+async def test_moving_collection_book_to_to_buy_keeps_added_at():
+    result = await _resave("new", "to_buy")
+
+    assert result.added_at == OLD_ADDED_AT
+
+
+async def test_new_to_buy_book_gets_now():
+    before = datetime.now(UTC).isoformat()
+
+    result = await _resave(None, "to_buy")
+
+    assert result.added_at >= before
+    assert result.status == "to_buy"
