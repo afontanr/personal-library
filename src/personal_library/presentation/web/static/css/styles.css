@@ -296,6 +296,14 @@ body::before {
   margin-bottom: 0.5rem;
 }
 
+.book-card__saga {
+  font-family: var(--font-ui);
+  font-size: 0.7rem;
+  font-style: italic;
+  color: var(--warm-gray);
+  margin-bottom: 0.5rem;
+}
+
 .book-card__date {
   margin-top: auto;
   font-family: var(--font-ui);
@@ -485,6 +493,86 @@ body::before {
   line-height: 1.85;
   color: var(--warm-gray);
   max-width: 620px;
+}
+
+/* ─────────────── SAGA ─────────────── */
+
+.saga-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.saga-form__name {
+  position: relative;
+  flex: 1 1 14rem;
+}
+
+.saga-form__input {
+  width: 100%;
+  padding: 0.4rem 0.85rem;
+  border: 1px solid var(--tag-border);
+  border-radius: 100px;
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+  background: var(--cream);
+  color: var(--walnut);
+}
+
+.saga-form__input:disabled {
+  opacity: 0.5;
+}
+
+.saga-form__volume {
+  width: 6rem;
+  flex: 0 0 6rem;
+}
+
+.saga-form__remove {
+  border: none;
+  background: none;
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  color: var(--muted-brown);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.saga-form__remove:hover {
+  color: var(--danger);
+}
+
+.saga-suggestions {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  left: 0;
+  right: 0;
+  z-index: 10;
+  margin: 0;
+  padding: 0.25rem 0;
+  list-style: none;
+  background: var(--cream);
+  border: 1px solid var(--tag-border);
+  border-radius: 0.5rem;
+  max-height: 12rem;
+  overflow-y: auto;
+}
+
+.saga-suggestions__option {
+  padding: 0.4rem 0.85rem;
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+  color: var(--walnut);
+  cursor: pointer;
+}
+
+.saga-suggestions__option:hover {
+  background: var(--tag-bg);
+}
+
+.saga-suggestions__option--create {
+  font-style: italic;
 }
 
 /* ─────────────── TAGS / GENRES ─────────────── */

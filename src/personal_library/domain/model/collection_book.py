@@ -1,5 +1,7 @@
 from dataclasses import dataclass, field
 
+from personal_library.domain.model.saga import SagaMembership
+
 
 @dataclass(frozen=True)
 class ReadingPeriod:
@@ -22,3 +24,4 @@ class CollectionBook:
     tags: list[str] = field(default_factory=list)
     opinion: str | None = None
     reading_periods: list[ReadingPeriod] = field(default_factory=list)
+    saga: SagaMembership | None = None

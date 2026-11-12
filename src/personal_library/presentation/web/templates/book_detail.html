@@ -119,6 +119,33 @@
       </div>
     </section>
 
+    <!-- Saga -->
+    <section class="detail-section" id="saga-section">
+      <h2 class="detail-section__title">Saga</h2>
+      <div class="saga-form">
+        <div class="saga-form__name">
+          <input
+            type="text"
+            class="saga-form__input"
+            id="saga-input"
+            placeholder="Nombre de la saga..."
+            autocomplete="off"
+          >
+          <ul class="saga-suggestions" id="saga-suggestions" hidden></ul>
+        </div>
+        <input
+          type="number"
+          class="saga-form__input saga-form__volume"
+          id="saga-volume-input"
+          placeholder="Tomo"
+          min="0"
+          step="any"
+          disabled
+        >
+        <button type="button" class="saga-form__remove" id="saga-remove-btn" hidden>Quitar saga</button>
+      </div>
+    </section>
+
     <!-- Rating -->
     <section class="detail-section" id="rating-section">
       <h2 class="detail-section__title">Valoración</h2>
@@ -206,6 +233,7 @@
     localStorage.setItem('pl_' + isbn + '_rating', JSON.stringify({{ book.rating }}));
     {% endif %}
     localStorage.setItem('pl_' + isbn + '_tags', JSON.stringify({{ book.tags | tojson }}));
+    localStorage.setItem('pl_' + isbn + '_saga', JSON.stringify({{ book.saga | tojson }}));
     localStorage.setItem(
       'pl_' + isbn + '_reading_dates',
       JSON.stringify(
@@ -217,6 +245,9 @@
     {% if book.opinion %}
     localStorage.setItem('pl_' + isbn + '_opinion', JSON.stringify({{ book.opinion | tojson }}));
     {% endif %}
+    {% else %}
+    // A book outside the collection has no saga: drop any left over from a deleted copy.
+    localStorage.removeItem('pl_' + isbn + '_saga');
     {% endif %}
 
     PersonalLibrary.initBookDetail(isbn);

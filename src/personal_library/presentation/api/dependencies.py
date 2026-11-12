@@ -4,11 +4,13 @@ from fastapi import Depends, Request
 
 from personal_library.application.use_cases.delete_book import DeleteBookFromCollection
 from personal_library.application.use_cases.list_collection import ListCollection
+from personal_library.application.use_cases.list_sagas import ListSagas
 from personal_library.application.use_cases.lookup_book import LookupBookByIsbn
 from personal_library.application.use_cases.save_book import SaveBookToCollection
 from personal_library.domain.ports.book_repository import BookRepository
 from personal_library.domain.ports.collection_repository import CollectionRepository
 from personal_library.domain.ports.cover_resolver import CoverResolver
+from personal_library.domain.ports.saga_repository import SagaRepository
 from personal_library.infrastructure.adapters.http.google_books_client import (
     GoogleBooksClient,
 )
@@ -71,3 +73,13 @@ def get_list_collection_use_case(
     collection_repository: CollectionRepository = Depends(get_collection_repository),
 ) -> ListCollection:
     return ListCollection(collection_repository=collection_repository)
+
+
+def get_saga_repository(request: Request) -> SagaRepository:
+    return request.app.state.collection_repository
+
+
+def get_list_sagas_use_case(
+    saga_repository: SagaRepository = Depends(get_saga_repository),
+) -> ListSagas:
+    return ListSagas(saga_repository=saga_repository)

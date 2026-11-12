@@ -5,6 +5,7 @@ from personal_library.domain.model.collection_book import (
     CollectionBook,
     ReadingPeriod,
 )
+from personal_library.domain.model.saga import SagaMembership
 from personal_library.domain.ports.collection_repository import CollectionRepository
 
 
@@ -14,6 +15,11 @@ class SaveBookInput:
     class ReadingPeriodInput:
         start_date: str | None = None
         end_date: str | None = None
+
+    @dataclass
+    class SagaInput:
+        name: str
+        volume: float | None = None
 
     isbn_13: str
     title: str
@@ -27,6 +33,7 @@ class SaveBookInput:
     tags: list[str] = field(default_factory=list)
     opinion: str | None = None
     reading_periods: list[ReadingPeriodInput] = field(default_factory=list)
+    saga: SagaInput | None = None
 
 
 class SaveBookToCollection:
@@ -38,6 +45,12 @@ class SaveBookToCollection:
             ReadingPeriod(start_date=rp.start_date, end_date=rp.end_date)
             for rp in book_input.reading_periods
         ]
+
+        saga = (
+            SagaMembership(name=book_input.saga.name, volume=book_input.saga.volume)
+            if book_input.saga
+            else None
+        )
 
         book = CollectionBook(
             isbn_13=book_input.isbn_13,
@@ -53,7 +66,9 @@ class SaveBookToCollection:
             opinion=book_input.opinion,
             added_at=datetime.now(UTC).isoformat(),
             reading_periods=reading_periods,
+            saga=saga,
         )
 
         await self._collection_repository.save(book)
-        return book
+        persisted = await self._collection_repository.find_by_isbn(book.isbn_13)
+        return persisted or book

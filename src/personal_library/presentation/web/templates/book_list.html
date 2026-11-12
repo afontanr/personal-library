@@ -51,6 +51,9 @@
       <div class="book-card__info">
         <h2 class="book-card__title">{{ book.title }}</h2>
         <p class="book-card__authors">{{ book.authors | join(', ') }}</p>
+        {% if book.saga %}
+        <p class="book-card__saga">{{ book.saga.name }}{% if book.saga.volume is not none %} · {{ book.saga.volume | volume }}{% endif %}</p>
+        {% endif %}
         <time class="book-card__date">{{ book.published_date or 'Fecha desconocida' }}</time>
       </div>
     </a>

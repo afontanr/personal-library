@@ -1,4 +1,6 @@
-from pydantic import BaseModel
+from typing import Annotated
+
+from pydantic import BaseModel, Field, StringConstraints
 
 
 class BookInfoResponse(BaseModel):
@@ -16,6 +18,22 @@ class ReadingPeriodRequest(BaseModel):
     end_date: str | None = None
 
 
+class SagaRequest(BaseModel):
+    name: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+    volume: float | None = Field(default=None, ge=0)
+
+
+class SagaResponse(BaseModel):
+    id: int | None
+    name: str
+    volume: float | None
+
+
+class SagaSummaryResponse(BaseModel):
+    id: int
+    name: str
+
+
 class SaveBookRequest(BaseModel):
     isbn_13: str
     title: str
@@ -29,6 +47,7 @@ class SaveBookRequest(BaseModel):
     tags: list[str] = []
     opinion: str | None = None
     reading_periods: list[ReadingPeriodRequest] = []
+    saga: SagaRequest | None = None
 
 
 class CollectionBookResponse(BaseModel):
@@ -45,3 +64,4 @@ class CollectionBookResponse(BaseModel):
     opinion: str | None
     added_at: str
     reading_periods: list[ReadingPeriodRequest]
+    saga: SagaResponse | None = None
