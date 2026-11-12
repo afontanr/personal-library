@@ -311,59 +311,66 @@
 
   /* ─────────────── SAVE BUTTON ─────────────── */
 
+  function buildSaveBody(isbn, status) {
+    var title = document.getElementById('book-title-input');
+    var authors = document.getElementById('book-authors-input');
+    var publishedDate = document.getElementById('book-date-input');
+    var description = document.getElementById('book-description-edit');
+    var saveBtn = document.getElementById('save-book-btn');
+
+    var coverUrl = null;
+    var coverImg = document.querySelector('.book-detail__cover');
+    if (coverImg && coverImg.src) {
+      coverUrl = coverImg.src;
+    }
+
+    var readingDates = getBookData(isbn, 'reading_dates') || [];
+
+    return {
+      isbn_13: isbn,
+      isbn_10: (saveBtn && saveBtn.dataset.isbn10) || null,
+      title: title ? title.value.trim() : '',
+      authors: authors ? authors.value.split(',').map(function (s) { return s.trim(); }).filter(Boolean) : [],
+      description: description ? description.value.trim() : null,
+      published_date: publishedDate ? publishedDate.value.trim() || null : null,
+      cover_image_url: coverUrl,
+      status: status,
+      rating: getBookData(isbn, 'rating') || null,
+      tags: getBookData(isbn, 'tags') || [],
+      opinion: getBookData(isbn, 'opinion') || null,
+      reading_periods: readingDates.map(function (entry) {
+        return { start_date: entry.start || null, end_date: entry.end || null };
+      })
+    };
+  }
+
   function initSaveButton(isbn) {
     var saveBtn = document.getElementById('save-book-btn');
+    var toBuyBtn = document.getElementById('save-to-buy-btn');
+    var purchaseBtn = document.getElementById('purchase-book-btn');
     var statusMsg = document.getElementById('save-status-message');
+    var article = document.querySelector('.book-detail');
     if (!saveBtn) return;
 
-    saveBtn.addEventListener('click', function () {
-      var title = document.getElementById('book-title-input');
-      var authors = document.getElementById('book-authors-input');
-      var publishedDate = document.getElementById('book-date-input');
-      var description = document.getElementById('book-description-edit');
+    var wasSaved = saveBtn.dataset.inCollection === 'true';
+    var wasToBuy = !!article && article.dataset.toBuy === 'true';
+    var buttons = [saveBtn, toBuyBtn, purchaseBtn].filter(Boolean);
+
+    function saveBook(statusOverride, triggerBtn) {
       var statusSelect = document.getElementById('book-status-select');
+      var status = statusOverride || (statusSelect ? statusSelect.value : 'new');
+      var idleLabel = triggerBtn.textContent;
+      var reloading = false;
 
-      var isbn10 = saveBtn.dataset.isbn10 || null;
-
-      var coverUrl = null;
-      var coverImg = document.querySelector('.book-detail__cover');
-      if (coverImg && coverImg.src) {
-        coverUrl = coverImg.src;
-      }
-
-      var rating = getBookData(isbn, 'rating') || null;
-      var tags = getBookData(isbn, 'tags') || [];
-      var opinion = getBookData(isbn, 'opinion') || null;
-      var readingDates = getBookData(isbn, 'reading_dates') || [];
-
-      var readingPeriods = readingDates.map(function (entry) {
-        return { start_date: entry.start || null, end_date: entry.end || null };
-      });
-
-      var body = {
-        isbn_13: isbn,
-        isbn_10: isbn10,
-        title: title ? title.value.trim() : '',
-        authors: authors ? authors.value.split(',').map(function (s) { return s.trim(); }).filter(Boolean) : [],
-        description: description ? description.value.trim() : null,
-        published_date: publishedDate ? publishedDate.value.trim() || null : null,
-        cover_image_url: coverUrl,
-        status: statusSelect ? statusSelect.value : 'new',
-        rating: rating,
-        tags: tags,
-        opinion: opinion,
-        reading_periods: readingPeriods
-      };
-
-      saveBtn.disabled = true;
-      saveBtn.textContent = 'Guardando...';
+      buttons.forEach(function (btn) { btn.disabled = true; });
+      triggerBtn.textContent = 'Guardando...';
       statusMsg.textContent = '';
       statusMsg.className = 'save-status-message';
 
       fetch('/api/collection', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
+        body: JSON.stringify(buildSaveBody(isbn, status))
       })
         .then(function (response) {
           if (!response.ok) {
@@ -374,19 +381,15 @@
           return response.json();
         })
         .then(function () {
+          // A book that enters the collection or the futuras compras list
+          // (or moves between them) renders a different page: reload it.
+          if (!wasSaved || (status === 'to_buy') !== wasToBuy) {
+            reloading = true;
+            window.location.reload();
+            return;
+          }
           statusMsg.textContent = 'Guardado correctamente.';
           statusMsg.className = 'save-status-message is-success';
-          saveBtn.textContent = 'Guardar cambios';
-
-          if (saveBtn.dataset.inCollection === 'false') {
-            saveBtn.dataset.inCollection = 'true';
-            var badgeContainer = saveBtn.parentElement;
-            var badge = document.createElement('div');
-            badge.className = 'in-collection-badge';
-            badge.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> En tu colecci\u00f3n';
-            badgeContainer.insertBefore(badge, saveBtn.parentElement.firstChild);
-          }
-
           setTimeout(function () {
             statusMsg.textContent = '';
           }, 3000);
@@ -394,29 +397,40 @@
         .catch(function (err) {
           statusMsg.textContent = err.message;
           statusMsg.className = 'save-status-message is-error';
-          saveBtn.textContent = 'A\u00f1adir a mi colecci\u00f3n';
         })
         .finally(function () {
-          saveBtn.disabled = false;
+          if (reloading) return;
+          triggerBtn.textContent = idleLabel;
+          buttons.forEach(function (btn) { btn.disabled = false; });
         });
-    });
+    }
+
+    saveBtn.addEventListener('click', function () { saveBook(null, saveBtn); });
+    if (toBuyBtn) {
+      toBuyBtn.addEventListener('click', function () { saveBook('to_buy', toBuyBtn); });
+    }
+    if (purchaseBtn) {
+      purchaseBtn.addEventListener('click', function () { saveBook('new', purchaseBtn); });
+    }
   }
 
   /* ─────────────── DELETE DIALOG + TOAST ─────────────── */
 
   var deleteIsbn = null;
   var deleteOrigin = null;
+  var deleteReturnUrl = '/';
 
   var deleteDialog = document.getElementById('delete-dialog');
   var deleteDialogMessage = document.getElementById('delete-dialog-message');
   var deleteDialogCancel = document.getElementById('delete-dialog-cancel');
   var deleteDialogConfirm = document.getElementById('delete-dialog-confirm');
 
-  function openDeleteDialog(isbn, title, origin) {
+  function openDeleteDialog(isbn, title, origin, listLabel, returnUrl) {
     deleteIsbn = isbn;
     deleteOrigin = origin;
+    deleteReturnUrl = returnUrl || '/';
     if (deleteDialogMessage) {
-      deleteDialogMessage.textContent = 'Estas seguro de que quieres eliminar \u2018' + title + '\u2019 de tu coleccion?';
+      deleteDialogMessage.textContent = 'Estas seguro de que quieres eliminar \u2018' + title + '\u2019 de ' + (listLabel || 'tu coleccion') + '?';
     }
     if (deleteDialog) {
       deleteDialog.showModal();
@@ -470,7 +484,7 @@
         if (deleteDialog) deleteDialog.close();
 
         if (deleteOrigin === 'detail') {
-          window.location.href = '/';
+          window.location.href = deleteReturnUrl;
         } else {
           var card = document.querySelector('.book-card[data-isbn="' + deleteIsbn + '"]');
           if (card) {
@@ -567,14 +581,15 @@
     var dropdown = card.querySelector('.card-menu-dropdown');
     if (dropdown) dropdown.classList.remove('is-open');
 
-    openDeleteDialog(isbn, title, 'list');
+    var grid = card.closest('.book-grid');
+    openDeleteDialog(isbn, title, 'list', grid && grid.dataset.listLabel);
   });
 
   document.addEventListener('click', function (e) {
     var btn = e.target.closest('#delete-book-btn');
     if (!btn) return;
 
-    openDeleteDialog(btn.dataset.isbn, btn.dataset.title, 'detail');
+    openDeleteDialog(btn.dataset.isbn, btn.dataset.title, 'detail', btn.dataset.listLabel, btn.dataset.returnUrl);
   });
 
   /* ─────────────── PUBLIC INIT ─────────────── */

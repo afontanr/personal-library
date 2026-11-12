@@ -1,4 +1,4 @@
-<div class="book-grid">
+<div class="book-grid" data-list-label="{{ list_label }}">
   {% for book in books %}
   <div class="book-card" data-isbn="{{ book.isbn_13 }}" data-title="{{ book.title }}">
     <button class="card-menu-trigger" aria-label="Menú" title="Menú">

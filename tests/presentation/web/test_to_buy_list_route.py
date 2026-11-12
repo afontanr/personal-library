@@ -74,6 +74,7 @@ async def test_to_buy_list_shows_only_to_buy_books():
     assert "Mío" not in text
     assert '<span class="book-count">2</span>' in text
     assert "libros por comprar" in text
+    assert 'class="book-grid" data-list-label="tus futuras compras"' in text
     assert 'id="empty-state-template"' in text
 
 

@@ -127,6 +127,7 @@ async def book_detail(
                     for rp in collection_book.reading_periods
                 ],
                 "in_collection": True,
+                "is_to_buy": collection_book.is_to_buy,
                 "isbn_13_resolved": isbn_13,
             }
         )
@@ -165,6 +166,7 @@ async def book_detail(
                 "opinion": None,
                 "reading_periods": [],
                 "in_collection": False,
+                "is_to_buy": False,
                 "isbn_13_resolved": isbn_13,
             }
         )
