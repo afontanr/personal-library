@@ -19,7 +19,6 @@ from personal_library.presentation.api.dependencies import (
 )
 from personal_library.presentation.api.schemas import (
     CollectionBookResponse,
-    ReadingPeriodRequest,
     SaveBookRequest,
 )
 
@@ -52,27 +51,7 @@ async def save_book(
         ],
     )
     result = await use_case.execute(book_input)
-    return CollectionBookResponse(
-        isbn_13=result.isbn_13,
-        isbn_10=result.isbn_10,
-        title=result.title,
-        authors=result.authors,
-        description=result.description,
-        published_date=result.published_date,
-        cover_image_url=result.cover_image_url,
-        status=result.status,
-        rating=result.rating,
-        tags=result.tags,
-        opinion=result.opinion,
-        added_at=result.added_at,
-        reading_periods=[
-            ReadingPeriodRequest(
-                start_date=rp.start_date,
-                end_date=rp.end_date,
-            )
-            for rp in result.reading_periods
-        ],
-    )
+    return CollectionBookResponse.from_book(result)
 
 
 @router.get("", response_model=list[CollectionBookResponse])
@@ -81,30 +60,7 @@ async def list_collection(
     use_case: ListCollection = Depends(get_list_collection_use_case),
 ) -> list[CollectionBookResponse]:
     books = await use_case.execute(CollectionOrder.from_param(orden))
-    return [
-        CollectionBookResponse(
-            isbn_13=b.isbn_13,
-            isbn_10=b.isbn_10,
-            title=b.title,
-            authors=b.authors,
-            description=b.description,
-            published_date=b.published_date,
-            cover_image_url=b.cover_image_url,
-            status=b.status,
-            rating=b.rating,
-            tags=b.tags,
-            opinion=b.opinion,
-            added_at=b.added_at,
-            reading_periods=[
-                ReadingPeriodRequest(
-                    start_date=rp.start_date,
-                    end_date=rp.end_date,
-                )
-                for rp in b.reading_periods
-            ],
-        )
-        for b in books
-    ]
+    return [CollectionBookResponse.from_book(b) for b in books]
 
 
 @router.delete(

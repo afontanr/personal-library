@@ -1,5 +1,7 @@
 from pydantic import BaseModel
 
+from personal_library.domain.model.collection_book import CollectionBook
+
 
 class BookInfoResponse(BaseModel):
     isbn_13: str
@@ -45,3 +47,24 @@ class CollectionBookResponse(BaseModel):
     opinion: str | None
     added_at: str
     reading_periods: list[ReadingPeriodRequest]
+
+    @classmethod
+    def from_book(cls, book: CollectionBook) -> "CollectionBookResponse":
+        return cls(
+            isbn_13=book.isbn_13,
+            isbn_10=book.isbn_10,
+            title=book.title,
+            authors=book.authors,
+            description=book.description,
+            published_date=book.published_date,
+            cover_image_url=book.cover_image_url,
+            status=book.status,
+            rating=book.rating,
+            tags=book.tags,
+            opinion=book.opinion,
+            added_at=book.added_at,
+            reading_periods=[
+                ReadingPeriodRequest(start_date=rp.start_date, end_date=rp.end_date)
+                for rp in book.reading_periods
+            ],
+        )
