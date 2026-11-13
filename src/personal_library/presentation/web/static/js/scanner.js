@@ -13,78 +13,82 @@
   var unsupportedEl = document.getElementById('unsupported-browser');
   var coverPreview = document.getElementById('scan-cover-preview');
 
-  var bookPayload = null;
-  var scanner = null;
-  var scanning = false;
+  var torchBtn = document.getElementById('scan-torch-btn');
+  var manualForm = document.getElementById('manual-isbn-form');
+  var manualInput = document.getElementById('manual-isbn-input');
+  var manualError = document.getElementById('manual-isbn-error');
 
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+  var bookPayload = null;
+  var torchOn = false;
+  var reader = IsbnReader.create(document.getElementById('scanner-reader'), {
+    wasmUrl: document.getElementById('scanner-reader').dataset.wasmUrl,
+  });
+
+  var cameraSupported = !!(
+    navigator.mediaDevices && navigator.mediaDevices.getUserMedia
+  );
+  if (!cameraSupported) {
     unsupportedEl.style.display = 'block';
     if (startBtn) startBtn.disabled = true;
-    return;
   }
-
-  scanner = new Html5Qrcode('scanner-reader', {
-    formatsToSupport: [
-      Html5QrcodeSupportedFormats.EAN_13,
-      Html5QrcodeSupportedFormats.EAN_8,
-      Html5QrcodeSupportedFormats.UPC_A,
-      Html5QrcodeSupportedFormats.UPC_E,
-    ],
-    useBarCodeDetectorIfSupported: false,
-    verbose: false,
-  });
 
   startBtn.addEventListener('click', startScanning);
 
   function startScanning() {
-    if (scanning) return;
-
     startBtn.disabled = true;
     startBtn.textContent = 'Iniciando...';
     statusEl.textContent = '';
 
-    scanner
-      .start(
-        { facingMode: 'environment' },
-        { fps: 10 },
-        function (decodedText) {
-          if (!scanning) return;
-          onBarcodeDetected(decodedText);
-        },
-        function () {}
-      )
-      .then(function () {
-        scanning = true;
+    reader
+      .start(showResult)
+      .then(function (started) {
+        if (!started) return;
+        cameraView.classList.add('is-scanning');
         startBtn.style.display = 'none';
         statusEl.textContent =
-          'Apunta la cámara al código de barras del libro...';
+          'Pon el código dentro de la franja, en horizontal y a un palmo.';
+        torchOn = false;
+        torchBtn.setAttribute('aria-pressed', 'false');
+        torchBtn.style.display = reader.hasTorch() ? 'inline-flex' : 'none';
       })
       .catch(function (err) {
         startBtn.disabled = false;
         startBtn.textContent = 'Iniciar cámara';
         statusEl.textContent =
-          'Error al acceder a la cámara: ' + (err || 'Permiso denegado');
+          'Error al acceder a la cámara: ' +
+          ((err && err.message) || err || 'Permiso denegado');
       });
   }
 
-  function onBarcodeDetected(value) {
-    scanning = false;
+  torchBtn.addEventListener('click', function () {
+    torchOn = !torchOn;
+    reader.setTorch(torchOn).catch(function () {});
+    torchBtn.setAttribute('aria-pressed', String(torchOn));
+  });
 
-    scanner
-      .stop()
-      .then(function () {
-        showResult(value);
-      })
-      .catch(function () {
-        showResult(value);
-      });
-  }
+  manualForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var isbn = IsbnReader.toIsbn13(manualInput.value);
+    if (!isbn) {
+      manualError.textContent =
+        'ISBN no válido. Revisa los 10 o 13 dígitos.';
+      manualError.style.display = 'block';
+      return;
+    }
+    manualError.style.display = 'none';
+    reader.stop().then(function () {
+      showResult(isbn);
+    });
+  });
 
-  function showResult(value) {
+  function showResult(isbn) {
     statusEl.textContent = '';
+    cameraView.classList.remove('is-scanning');
     cameraView.style.display = 'none';
+    torchBtn.style.display = 'none';
+    manualForm.style.display = 'none';
+    manualInput.value = '';
 
-    var isbn = value.trim();
     resultIsbn.textContent = isbn;
     scanResult.style.display = 'block';
 
@@ -246,15 +250,15 @@
   }
 
   function resetScanner() {
-    scanner.stop().then(resetUI).catch(resetUI);
+    reader.stop().then(resetUI);
   }
 
   function resetUI() {
-    scanning = false;
     scanResult.style.display = 'none';
     cameraView.style.display = 'block';
+    manualForm.style.display = '';
     startBtn.style.display = 'inline-flex';
-    startBtn.disabled = false;
+    startBtn.disabled = !cameraSupported;
     startBtn.textContent = 'Iniciar cámara';
     statusEl.textContent = '';
     saveForm.style.display = 'none';
@@ -266,9 +270,7 @@
   }
 
   function releaseCamera() {
-    if (scanner) {
-      scanner.stop().catch(function () {});
-    }
+    reader.stop();
   }
   window.addEventListener('beforeunload', releaseCamera);
   window.addEventListener('pagehide', releaseCamera);

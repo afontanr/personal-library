@@ -1052,7 +1052,7 @@ body::before {
   font-family: var(--font-display);
   font-size: 2.4rem;
   font-weight: 700;
-  color: var(--color-walnut);
+  color: var(--walnut);
   width: 100%;
   border: 2px solid transparent;
   border-radius: 0.5rem;
@@ -1064,14 +1064,14 @@ body::before {
 }
 
 .book-detail__title-input:focus {
-  border-color: var(--color-gold);
-  background: var(--color-cream);
+  border-color: var(--gold);
+  background: var(--cream);
 }
 
 .book-detail__authors-input {
   font-family: var(--font-body);
   font-size: 1.2rem;
-  color: var(--color-ink-light);
+  color: var(--warm-gray);
   width: 100%;
   border: 2px solid transparent;
   border-radius: 0.4rem;
@@ -1083,14 +1083,14 @@ body::before {
 }
 
 .book-detail__authors-input:focus {
-  border-color: var(--color-gold);
-  background: var(--color-cream);
+  border-color: var(--gold);
+  background: var(--cream);
 }
 
 .book-detail__date-input {
   font-family: var(--font-body);
   font-size: 0.75rem;
-  color: var(--color-ink-light);
+  color: var(--warm-gray);
   border: 2px solid transparent;
   border-radius: 0.4rem;
   padding: 0.05rem 0.35rem;
@@ -1101,8 +1101,8 @@ body::before {
 }
 
 .book-detail__date-input:focus {
-  border-color: var(--color-gold);
-  background: var(--color-cream);
+  border-color: var(--gold);
+  background: var(--cream);
 }
 
 .book-description-edit {
@@ -1111,7 +1111,7 @@ body::before {
   font-family: var(--font-body);
   font-size: 1rem;
   line-height: 1.7;
-  color: var(--color-ink);
+  color: var(--walnut);
   border: 2px solid transparent;
   border-radius: 0.5rem;
   padding: 0.8rem;
@@ -1122,8 +1122,8 @@ body::before {
 }
 
 .book-description-edit:focus {
-  border-color: var(--color-gold);
-  background: var(--color-cream);
+  border-color: var(--gold);
+  background: var(--cream);
 }
 
 .status-section {
@@ -1134,11 +1134,11 @@ body::before {
 .status-select {
   font-family: var(--font-body);
   font-size: 0.9rem;
-  color: var(--color-walnut);
-  border: 2px solid var(--color-gold);
+  color: var(--walnut);
+  border: 2px solid var(--gold);
   border-radius: 0.4rem;
   padding: 0.4rem 0.8rem;
-  background: var(--color-cream);
+  background: var(--cream);
   cursor: pointer;
   outline: none;
 }
@@ -1150,8 +1150,8 @@ body::before {
   font-family: var(--font-ui);
   font-size: 1rem;
   font-weight: 600;
-  color: var(--color-cream);
-  background: var(--color-walnut);
+  color: var(--cream);
+  background: var(--walnut);
   border: none;
   border-radius: 0.6rem;
   padding: 0.8rem 2rem;
@@ -1160,7 +1160,13 @@ body::before {
 }
 
 .save-button:hover {
-  background: var(--color-ink);
+  background: var(--gold);
+  color: var(--walnut);
+}
+
+.save-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .save-button:active {
@@ -1274,8 +1280,72 @@ body::before {
   min-height: 240px;
 }
 
+.camera-view.is-scanning #scanner-reader {
+  min-height: 0;
+}
+
 #scanner-reader video {
-  border-radius: 0 !important;
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Decoded band of the frame; must match BAND in isbn-reader.js. */
+.scan-guide {
+  display: none;
+  position: absolute;
+  left: 8%;
+  top: 30%;
+  width: 84%;
+  height: 40%;
+  border: 2px solid var(--gold-light);
+  border-radius: 8px;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+}
+
+.camera-view.is-scanning .scan-guide {
+  display: block;
+}
+
+.scan-torch-btn {
+  position: absolute;
+  right: 0.75rem;
+  bottom: 0.75rem;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  color: var(--parchment);
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--gold-light);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.scan-torch-btn[aria-pressed="true"] {
+  color: var(--walnut);
+  background: var(--gold-light);
+}
+
+.manual-isbn {
+  margin-top: 1.5rem;
+}
+
+.manual-isbn__row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.manual-isbn__row .scan-form__input {
+  flex: 1;
+  min-width: 0;
+}
+
+.manual-isbn__error {
+  margin-top: 0.5rem;
+  font-family: var(--font-body);
+  color: #b4533c;
 }
 
 .scan-controls {
