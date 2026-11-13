@@ -11,12 +11,16 @@ El conjunto de libros que el usuario posee y ha guardado en su biblioteca person
 _Avoid_: Biblioteca (como sinónimo de los datos), lista
 
 **Futuras compras**:
-Los libros que el usuario aún no posee pero quiere comprar. Están separados de la Colección y no tienen estado de lectura.
+Los libros que el usuario aún no posee pero quiere comprar. Se consultan en su propia sección, separados de la Colección, y no tienen estado de lectura.
 _Avoid_: Lista de deseos, wishlist, pendientes (Pendiente es un estado de lectura)
 
 **Compra**:
-El paso de un libro de Futuras compras a la Colección. A partir de ese momento cuenta como añadido a la Colección.
+El paso de un libro de Futuras compras a la Colección. A partir de ese momento cuenta como añadido a la Colección. Un libro solo pasa de Futuras compras a la Colección, nunca al revés.
 _Avoid_: Adquisición, mover
+
+**Fecha de entrada**:
+Cuándo el libro entró en la Colección. Para un libro que se guardó primero en Futuras compras, es el momento de la Compra, no cuando se apuntó. Mientras está en Futuras compras, es cuándo se apuntó.
+_Avoid_: Fecha de creación
 
 **Autor principal**:
 El primer autor que figura en la lista de autores de un libro, tal como está escrito.
@@ -24,12 +28,14 @@ _Avoid_: Autor (a secas, cuando hay varios), primer autor
 
 ### Orden de la colección
 
+Los dos órdenes se aplican igual a la colección y a futuras compras.
+
 **Orden por defecto**:
-Los libros de la colección del más reciente al más antiguo según cuándo se añadieron.
+Los libros del más reciente al más antiguo según su fecha de entrada.
 _Avoid_: Orden cronológico, recientes
 
 **Orden por autor**:
-Los libros de la colección de la A a la Z por el nombre del autor principal, tal como está escrito (sin separar nombre y apellido), sin distinguir mayúsculas ni acentos. Dentro de un mismo autor, por fecha de publicación (los que no tienen fecha, detrás); los libros sin autor van al final.
+Los libros de la A a la Z por el nombre del autor principal, tal como está escrito (sin separar nombre y apellido), sin distinguir mayúsculas ni acentos. Dentro de un mismo autor, por fecha de publicación (los que no tienen fecha, detrás); los libros sin autor van al final.
 _Avoid_: Orden alfabético, orden por apellido
 
 **Orden por saga**:
