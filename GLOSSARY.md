@@ -32,6 +32,10 @@ _Avoid_: Orden cronológico, recientes
 Los libros de la colección de la A a la Z por el nombre del autor principal, tal como está escrito (sin separar nombre y apellido), sin distinguir mayúsculas ni acentos. Dentro de un mismo autor, por fecha de publicación (los que no tienen fecha, detrás); los libros sin autor van al final.
 _Avoid_: Orden alfabético, orden por apellido
 
+**Orden por saga**:
+Los libros de la colección agrupados por saga, con las sagas de la A a la Z por su nombre sin distinguir mayúsculas ni acentos. Dentro de una saga, por número de tomo de menor a mayor (los que no tienen tomo, detrás); a igual tomo, por fecha de publicación y después por título. Una saga sale como grupo aunque solo tenga un libro. Los libros sin saga van al final, en su propio grupo, siguiendo el orden por autor. Solo existe en la Colección, no en las Futuras compras.
+_Avoid_: Agrupar por serie, vista de sagas
+
 ### Sagas
 
 **Saga**:

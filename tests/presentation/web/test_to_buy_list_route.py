@@ -101,3 +101,12 @@ async def test_nav_links_to_to_buy():
 
     assert re.search(r'<a href="[^"]*/futuras-compras">Futuras compras</a>', text)
     assert "Futuras compras" in text
+
+
+async def test_to_buy_list_has_no_saga_option():
+    default = await _get("/futuras-compras", BOOKS)
+    by_saga = await _get("/futuras-compras?orden=saga", BOOKS)
+
+    assert "orden=saga" not in default
+    assert _active("Recientes").search(by_saga)
+    assert by_saga.index("Otro") < by_saga.index("Deseado")

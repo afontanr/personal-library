@@ -1,0 +1,10 @@
+<div class="saga-groups">
+  {% for group in groups %}
+  <section class="saga-group"{% if group.name is none %} data-without-saga{% endif %}>
+    <h2 class="saga-group__title">{{ group.name if group.name is not none else 'Sin saga' }} · <span class="saga-group__count">{{ group.books|length }}</span> <span class="saga-group__noun">{{ 'libro' if group.books|length == 1 else 'libros' }}</span></h2>
+    {% with books=group.books, in_saga_group=group.name is not none, card_heading='h3' %}
+    {% include "partials/book_grid.html" %}
+    {% endwith %}
+  </section>
+  {% endfor %}
+</div>

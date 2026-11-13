@@ -1,5 +1,8 @@
-{% set by_author = order == 'autor' %}
+{% set options = [('defecto', 'Recientes', ''), ('autor', 'Autor', '?orden=autor')] %}
+{% if list_route == 'book_list' %}{% set options = options + [('saga', 'Saga', '?orden=saga')] %}{% endif %}
 <nav class="sort-toggle" aria-label="Ordenar libros">
-  <a href="{{ url_for(list_route) }}" class="sort-toggle__option{% if not by_author %} sort-toggle__option--active{% endif %}"{% if not by_author %} aria-current="true"{% endif %}>Recientes</a>
-  <a href="{{ url_for(list_route) }}?orden=autor" class="sort-toggle__option{% if by_author %} sort-toggle__option--active{% endif %}"{% if by_author %} aria-current="true"{% endif %}>Autor</a>
+  {% for value, label, query in options %}
+  {% set active = order == value %}
+  <a href="{{ url_for(list_route) }}{{ query }}" class="sort-toggle__option{% if active %} sort-toggle__option--active{% endif %}"{% if active %} aria-current="true"{% endif %}>{{ label }}</a>
+  {% endfor %}
 </nav>

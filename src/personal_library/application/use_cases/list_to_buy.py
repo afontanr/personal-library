@@ -15,4 +15,7 @@ class ListToBuy:
     ) -> list[CollectionBook]:
         books = await self._collection_repository.find_all()
         to_buy = [b for b in books if b.is_to_buy]
+        if order is CollectionOrder.SAGA:
+            # Orden por saga only exists in the Colección.
+            order = CollectionOrder.DEFAULT
         return sort_books(to_buy, order)

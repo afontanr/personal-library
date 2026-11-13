@@ -1,3 +1,4 @@
+{% set card_heading = card_heading or 'h2' %}
 <div class="book-grid" data-list-label="{{ list_label }}">
   {% for book in books %}
   <div class="book-card" data-isbn="{{ book.isbn_13 }}" data-title="{{ book.title }}">
@@ -29,9 +30,13 @@
         {% endif %}
       </div>
       <div class="book-card__info">
-        <h2 class="book-card__title">{{ book.title }}</h2>
+        <{{ card_heading }} class="book-card__title">{{ book.title }}</{{ card_heading }}>
         <p class="book-card__authors">{{ book.authors | join(', ') }}</p>
-        {% if book.saga %}
+        {% if in_saga_group %}
+        {% if book.saga and book.saga.volume is not none %}
+        <p class="book-card__saga">Tomo {{ book.saga.volume | volume }}</p>
+        {% endif %}
+        {% elif book.saga %}
         <p class="book-card__saga">{{ book.saga.name }}{% if book.saga.volume is not none %} · {{ book.saga.volume | volume }}{% endif %}</p>
         {% endif %}
         <time class="book-card__date">{{ book.published_date or 'Fecha desconocida' }}</time>

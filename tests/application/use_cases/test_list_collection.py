@@ -1,8 +1,10 @@
 from personal_library.application.use_cases.list_collection import (
     CollectionOrder,
     ListCollection,
+    group_by_saga,
 )
 from personal_library.domain.model.collection_book import CollectionBook
+from personal_library.domain.model.saga import SagaMembership
 from personal_library.domain.ports.collection_repository import CollectionRepository
 
 
@@ -47,6 +49,7 @@ async def _titles(books: list[CollectionBook], order: CollectionOrder) -> list[s
 
 def test_from_param():
     assert CollectionOrder.from_param("autor") is CollectionOrder.AUTHOR
+    assert CollectionOrder.from_param("saga") is CollectionOrder.SAGA
     for raw in (None, "", "xyz", "defecto"):
         assert CollectionOrder.from_param(raw) is CollectionOrder.DEFAULT
 
@@ -157,3 +160,113 @@ async def test_excludes_to_buy_books():
 
     for order in CollectionOrder:
         assert await _titles(books, order) == ["Mío"]
+
+
+# ─── Orden por saga ───
+
+
+def _saga_books(*specs: tuple) -> list[CollectionBook]:
+    """Build books from (title, saga, published_date[, authors]) tuples.
+
+    ``saga`` is a SagaMembership or None.
+    """
+    return [
+        CollectionBook(
+            isbn_13=f"978000001{i:04d}",
+            title=spec[0],
+            authors=spec[3] if len(spec) > 3 else ["Autor"],
+            published_date=spec[2],
+            added_at=f"2026-01-01T00:00:{i:02d}",
+            saga=spec[1],
+        )
+        for i, spec in enumerate(specs)
+    ]
+
+
+def _groups(books: list[CollectionBook]) -> list[tuple[str | None, list[str]]]:
+    return [(g.name, [b.title for b in g.books]) for g in group_by_saga(books)]
+
+
+def test_group_by_saga_orders_sagas_by_normalized_name():
+    books = _saga_books(
+        ("F1", SagaMembership("fundación", 1, saga_id=1), None),
+        ("E1", SagaMembership("Éxodo", 1, saga_id=2), None),
+        ("D1", SagaMembership("Dune", 1, saga_id=3), None),
+    )
+
+    assert [name for name, _ in _groups(books)] == ["Dune", "Éxodo", "fundación"]
+
+
+def test_group_by_saga_orders_by_volume_then_date_then_title():
+    def saga(volume):
+        return SagaMembership("Saga", volume, saga_id=1)
+
+    books = _saga_books(
+        ("Sin tomo", saga(None), None),
+        ("Tomo 3.5 nuevo", saga(3.5), "1990"),
+        ("Tomo 1", saga(1), None),
+        ("Precuela", saga(0), None),
+        ("Tomo 3.5 viejo", saga(3.5), "1985"),
+    )
+
+    assert _groups(books) == [
+        (
+            "Saga",
+            ["Precuela", "Tomo 1", "Tomo 3.5 viejo", "Tomo 3.5 nuevo", "Sin tomo"],
+        )
+    ]
+
+
+def test_group_by_saga_merges_same_saga_id():
+    books = _saga_books(
+        ("Dos", SagaMembership("el señor", 2, saga_id=1), None),
+        ("Uno", SagaMembership("El Señor", 1, saga_id=1), None),
+    )
+
+    assert _groups(books) == [("El Señor", ["Uno", "Dos"])]
+
+
+def test_group_by_saga_falls_back_to_normalized_name_without_id():
+    books = _saga_books(
+        ("Uno", SagaMembership("Dune", 1), None),
+        ("Dos", SagaMembership(" dune ", 2), None),
+    )
+
+    assert _groups(books) == [("Dune", ["Uno", "Dos"])]
+
+
+def test_group_by_saga_puts_books_without_saga_last_by_author():
+    books = _saga_books(
+        ("De Zoe", None, None, ["Zoe"]),
+        ("Saga 1", SagaMembership("Zzz", 1, saga_id=1), None),
+        ("De Ana", None, None, ["Ana"]),
+    )
+
+    assert _groups(books) == [("Zzz", ["Saga 1"]), (None, ["De Ana", "De Zoe"])]
+
+
+def test_group_by_saga_single_book_saga_is_a_group():
+    books = _saga_books(("Solo", SagaMembership("Única", None, saga_id=1), None))
+
+    assert _groups(books) == [("Única", ["Solo"])]
+
+
+def test_group_by_saga_only_no_saga_books():
+    books = _saga_books(("B", None, None, ["Zoe"]), ("A", None, None, ["Ana"]))
+
+    assert _groups(books) == [(None, ["A", "B"])]
+
+
+def test_group_by_saga_empty():
+    assert group_by_saga([]) == []
+
+
+async def test_saga_order_flattens_groups():
+    books = _saga_books(
+        ("Suelto", None, None),
+        ("B2", SagaMembership("B", 2, saga_id=2), None),
+        ("A1", SagaMembership("A", 1, saga_id=1), None),
+        ("B1", SagaMembership("B", 1, saga_id=2), None),
+    )
+
+    assert await _titles(books, CollectionOrder.SAGA) == ["A1", "B1", "B2", "Suelto"]

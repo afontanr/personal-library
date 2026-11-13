@@ -209,6 +209,32 @@ body::before {
   color: var(--cream);
 }
 
+/* Saga groups (Orden por saga) */
+
+.saga-group + .saga-group {
+  margin-top: 2.5rem;
+}
+
+.saga-group__title {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--walnut);
+  padding-bottom: 0.5rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid var(--border);
+  overflow-wrap: anywhere;
+}
+
+.saga-group__count,
+.saga-group__noun {
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: var(--muted-brown);
+}
+
 /* Book Grid */
 
 .book-grid {

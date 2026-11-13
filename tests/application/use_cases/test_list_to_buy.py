@@ -65,3 +65,12 @@ async def test_empty_when_no_to_buy_books():
     books = [_book(1, "Mío", "new"), _book(2, "Otro", "new")]
 
     assert await _titles(books) == []
+
+
+async def test_saga_order_falls_back_to_default():
+    books = [
+        _book(1, "B", "to_buy", ["Zoe"]),
+        _book(2, "A", "to_buy", ["Ana"]),
+    ]
+
+    assert await _titles(books, CollectionOrder.SAGA) == await _titles(books)

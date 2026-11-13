@@ -97,3 +97,13 @@ async def test_list_to_buy_unknown_orden_falls_back_to_default(orden):
 @pytest.mark.asyncio
 async def test_list_to_buy_returns_empty_array():
     assert await _get([OWNED]) == []
+
+
+@pytest.mark.asyncio
+async def test_list_to_buy_orden_saga_falls_back_to_default():
+    data = await _get([ALLENDE, BORGES], {"orden": "saga"})
+
+    assert [b["authors"][0] for b in data] == [
+        "Jorge Luis Borges",
+        "Isabel Allende",
+    ]

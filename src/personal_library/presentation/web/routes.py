@@ -8,6 +8,7 @@ from fastapi.templating import Jinja2Templates
 from personal_library.application.use_cases.list_collection import (
     CollectionOrder,
     ListCollection,
+    group_by_saga,
 )
 from personal_library.application.use_cases.list_to_buy import ListToBuy
 from personal_library.application.use_cases.lookup_book import (
@@ -48,6 +49,16 @@ def _saga_data(saga: SagaMembership | None) -> dict | None:
     return {"name": saga.name, "volume": saga.volume}
 
 
+def _saga_groups(books: list[CollectionBook]) -> list[dict] | None:
+    """Groups for Orden por saga, or None when only the "Sin saga" group exists."""
+    groups = group_by_saga(books)
+    if all(group.name is None for group in groups):
+        return None
+    return [
+        {"name": group.name, "books": _simple_books(group.books)} for group in groups
+    ]
+
+
 def _template_context(request: Request, **extra):
     return {"request": request, "current_year": datetime.now().year, **extra}
 
@@ -82,10 +93,13 @@ async def book_list(
 ):
     order = CollectionOrder.from_param(orden)
     books = await use_case.execute(order)
+    groups = _saga_groups(books) if order is CollectionOrder.SAGA else None
     return templates.TemplateResponse(
         request,
         "book_list.html",
-        _template_context(request, books=_simple_books(books), order=order.value),
+        _template_context(
+            request, books=_simple_books(books), groups=groups, order=order.value
+        ),
     )
 
 
@@ -96,6 +110,9 @@ async def to_buy_list(
     use_case: ListToBuy = Depends(get_list_to_buy_use_case),
 ):
     order = CollectionOrder.from_param(orden)
+    if order is CollectionOrder.SAGA:
+        # Orden por saga only exists in the Colección.
+        order = CollectionOrder.DEFAULT
     books = await use_case.execute(order)
     return templates.TemplateResponse(
         request,

@@ -383,3 +383,28 @@ async def test_list_collection_includes_saga(saga_client):
     )
     response = await client.get("/api/collection")
     assert response.json()[0]["saga"] == {"id": 7, "name": "Dune", "volume": 3.5}
+
+
+async def test_list_collection_orden_saga(saga_client):
+    client, fake_repo = saga_client
+    for i, (title, saga) in enumerate(
+        [
+            ("Suelto", None),
+            ("Dune 2", SagaMembership("Dune", 2, saga_id=1)),
+            ("Dune 1", SagaMembership("Dune", 1, saga_id=1)),
+        ]
+    ):
+        await fake_repo.save(
+            CollectionBook(
+                isbn_13=f"978000000000{i}",
+                title=title,
+                authors=["Autor"],
+                added_at=f"2026-11-12T10:00:0{i}",
+                saga=saga,
+            )
+        )
+
+    response = await client.get("/api/collection", params={"orden": "saga"})
+
+    assert response.status_code == 200
+    assert [b["title"] for b in response.json()] == ["Dune 1", "Dune 2", "Suelto"]
