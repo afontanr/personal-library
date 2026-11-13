@@ -10,7 +10,15 @@
 
 <div class="scan-hero">
   <div id="camera-view" class="camera-view">
-    <div id="scanner-reader"></div>
+    <div id="scanner-reader"
+         data-wasm-url="{{ url_for('web_static', path='js/vendor/barcode-detector/zxing_reader.wasm') }}"></div>
+    <div class="scan-guide" aria-hidden="true"></div>
+    <button type="button" id="scan-torch-btn" class="scan-torch-btn"
+            aria-pressed="false" aria-label="Linterna" style="display:none;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 6 6 18"/><path d="M8 2h8l-2 6h4L8 22l2-9H6z"/>
+      </svg>
+    </button>
   </div>
 
   <div class="scan-controls">
@@ -24,6 +32,16 @@
   </div>
 
   <p id="scan-status" class="scan-status"></p>
+
+  <form id="manual-isbn-form" class="manual-isbn" novalidate>
+    <label class="scan-form__label" for="manual-isbn-input">¿No lo lee? Escribe el ISBN</label>
+    <div class="manual-isbn__row">
+      <input type="text" id="manual-isbn-input" class="scan-form__input"
+             inputmode="numeric" autocomplete="off" placeholder="978…">
+      <button type="submit" class="save-button">Buscar</button>
+    </div>
+    <p id="manual-isbn-error" class="manual-isbn__error" style="display:none;"></p>
+  </form>
 </div>
 
 <div id="scan-result" class="scan-result" style="display:none;">
@@ -85,6 +103,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('web_static', path='js/vendor/html5-qrcode.min.js') }}"></script>
+<script src="{{ url_for('web_static', path='js/vendor/barcode-detector/ponyfill.js') }}"></script>
+<script src="{{ url_for('web_static', path='js/isbn-reader.js') }}"></script>
 <script src="{{ url_for('web_static', path='js/scanner.js') }}"></script>
 {% endblock %}

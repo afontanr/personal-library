@@ -1280,8 +1280,72 @@ body::before {
   min-height: 240px;
 }
 
+.camera-view.is-scanning #scanner-reader {
+  min-height: 0;
+}
+
 #scanner-reader video {
-  border-radius: 0 !important;
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Decoded band of the frame; must match BAND in isbn-reader.js. */
+.scan-guide {
+  display: none;
+  position: absolute;
+  left: 8%;
+  top: 30%;
+  width: 84%;
+  height: 40%;
+  border: 2px solid var(--gold-light);
+  border-radius: 8px;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+}
+
+.camera-view.is-scanning .scan-guide {
+  display: block;
+}
+
+.scan-torch-btn {
+  position: absolute;
+  right: 0.75rem;
+  bottom: 0.75rem;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  color: var(--parchment);
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--gold-light);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.scan-torch-btn[aria-pressed="true"] {
+  color: var(--walnut);
+  background: var(--gold-light);
+}
+
+.manual-isbn {
+  margin-top: 1.5rem;
+}
+
+.manual-isbn__row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.manual-isbn__row .scan-form__input {
+  flex: 1;
+  min-width: 0;
+}
+
+.manual-isbn__error {
+  margin-top: 0.5rem;
+  font-family: var(--font-body);
+  color: #b4533c;
 }
 
 .scan-controls {

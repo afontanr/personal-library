@@ -38,7 +38,7 @@ Hexagonal (ports & adapters) FastAPI app under `src/personal_library/`:
 
 ### Frontend
 
-No build step. Vanilla JS in `web/static/js/` (`app.js` for list/detail pages, `scanner.js` using vendored `html5-qrcode`) calls the JSON API with `fetch`. UI text is in Spanish.
+No build step. Vanilla JS in `web/static/js/` calls the JSON API with `fetch`: `app.js` for list/detail pages, `scanner.js` for `/scan`. `scanner.js` gets ISBNs from `isbn-reader.js` (camera, decoding and ISBN-13 validation behind `IsbnReader.create(...)` / `IsbnReader.toIsbn13`), which uses the native `BarcodeDetector` when it supports EAN-13 and otherwise the vendored `barcode-detector` ponyfill (ZXing-C++ WASM, served from `static/js/vendor/barcode-detector/`; see its README for versions). UI text is in Spanish.
 
 ### Docker / deployment
 
