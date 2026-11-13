@@ -140,3 +140,100 @@ async def test_card_without_saga_has_no_saga_line():
     text = await _get("/", BOOKS)
 
     assert "book-card__saga" not in text
+
+
+# ─── Orden por saga ───
+
+SAGA_BOOKS = [
+    CollectionBook(
+        isbn_13="9780000000011",
+        title="Las dos torres",
+        authors=["J. R. R. Tolkien"],
+        added_at="2026-05-11T10:00:00",
+        saga=SagaMembership("El Señor de los Anillos", 2, saga_id=1),
+    ),
+    CollectionBook(
+        isbn_13="9780000000012",
+        title="La comunidad del anillo",
+        authors=["J. R. R. Tolkien"],
+        added_at="2026-05-12T10:00:00",
+        saga=SagaMembership("El Señor de los Anillos", 1, saga_id=1),
+    ),
+    CollectionBook(
+        isbn_13="9780000000013",
+        title="Dune",
+        authors=["Frank Herbert"],
+        added_at="2026-05-13T10:00:00",
+        saga=SagaMembership("Dune", None, saga_id=2),
+    ),
+    *BOOKS,
+]
+
+
+async def test_book_list_toggle_offers_saga():
+    text = await _get("/", BOOKS)
+
+    assert '/?orden=saga"' in text
+    assert not _active("Saga").search(text)
+
+
+async def test_book_list_orden_saga_groups_books():
+    text = await _get("/?orden=saga", SAGA_BOOKS)
+
+    assert _active("Saga").search(text)
+    assert not _active("Recientes").search(text)
+    assert text.count('class="saga-group"') == 3
+    assert (
+        text.index("Dune · ")
+        < text.index("El Señor de los Anillos · ")
+        < text.index("Sin saga")
+    )
+    assert (
+        'El Señor de los Anillos · <span class="saga-group__count">2</span> '
+        '<span class="saga-group__noun">libros</span>'
+    ) in text
+    assert (
+        'Dune · <span class="saga-group__count">1</span> '
+        '<span class="saga-group__noun">libro</span>'
+    ) in text
+    assert text.index("La comunidad del anillo") < text.index("Las dos torres")
+    assert text.index("Las dos torres") < text.index("Alfa") < text.index("Zeta")
+    assert '<span class="book-count">5</span>' in text
+
+
+async def test_book_list_orden_saga_card_shows_volume():
+    grouped = await _get("/?orden=saga", SAGA_BOOKS)
+    by_author = await _get("/?orden=autor", SAGA_BOOKS)
+
+    assert '<p class="book-card__saga">Tomo 2</p>' in grouped
+    assert '<p class="book-card__saga">El Señor de los Anillos' not in grouped
+    # Dune has no volume: no saga line on its card.
+    assert grouped.count('class="book-card__saga"') == 2
+    assert '<p class="book-card__saga">El Señor de los Anillos · 2</p>' in by_author
+
+
+async def test_book_list_orden_saga_without_sagas_has_no_headers():
+    text = await _get("/?orden=saga", BOOKS)
+
+    assert "saga-group" not in text
+    assert "Sin saga" not in text
+    assert 'class="book-grid"' in text
+    assert text.index("Alfa") < text.index("Zeta")
+    assert _active("Saga").search(text)
+
+
+async def test_book_list_orden_saga_nests_card_headings_under_group():
+    grouped = await _get("/?orden=saga", SAGA_BOOKS)
+    flat = await _get("/?orden=autor", SAGA_BOOKS)
+
+    assert '<h2 class="saga-group__title">' in grouped
+    assert grouped.count('<h3 class="book-card__title">') == len(SAGA_BOOKS)
+    assert '<h2 class="book-card__title">' not in grouped
+    assert flat.count('<h2 class="book-card__title">') == len(SAGA_BOOKS)
+
+
+async def test_book_list_orden_saga_marks_group_without_saga():
+    text = await _get("/?orden=saga", SAGA_BOOKS)
+
+    assert text.count("data-without-saga") == 1
+    assert text.index("data-without-saga") > text.index("El Señor de los Anillos · ")

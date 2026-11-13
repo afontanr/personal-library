@@ -548,6 +548,25 @@
   var deleteDialogCancel = document.getElementById('delete-dialog-cancel');
   var deleteDialogConfirm = document.getElementById('delete-dialog-confirm');
 
+  // Orden por saga: when only the "Sin saga" group is left, show the plain
+  // grid without headers, as the server renders it on reload.
+  function flattenLoneWithoutSagaGroup() {
+    var wrapper = document.querySelector('.saga-groups');
+    if (!wrapper) return;
+    var groups = wrapper.querySelectorAll('.saga-group');
+    if (groups.length !== 1 || !groups[0].hasAttribute('data-without-saga')) return;
+    var grid = groups[0].querySelector('.book-grid');
+    if (!grid) return;
+    grid.querySelectorAll('h3.book-card__title').forEach(function (heading) {
+      var h2 = document.createElement('h2');
+      h2.className = heading.className;
+      h2.textContent = heading.textContent;
+      heading.replaceWith(h2);
+    });
+    wrapper.parentNode.insertBefore(grid, wrapper);
+    wrapper.remove();
+  }
+
   function openDeleteDialog(isbn, title, origin, listLabel, returnUrl) {
     deleteIsbn = isbn;
     deleteOrigin = origin;
@@ -612,8 +631,21 @@
           var card = document.querySelector('.book-card[data-isbn="' + deleteIsbn + '"]');
           if (card) {
             card.classList.add('is-deleting');
+            var sagaGroup = card.closest('.saga-group');
             card.addEventListener('animationend', function () {
               if (card.parentNode) card.parentNode.removeChild(card);
+              if (sagaGroup) {
+                var groupRemaining = sagaGroup.querySelectorAll('.book-card').length;
+                if (groupRemaining === 0) {
+                  sagaGroup.remove();
+                } else {
+                  var groupCount = sagaGroup.querySelector('.saga-group__count');
+                  var groupNoun = sagaGroup.querySelector('.saga-group__noun');
+                  if (groupCount) groupCount.textContent = groupRemaining;
+                  if (groupNoun) groupNoun.textContent = groupRemaining === 1 ? 'libro' : 'libros';
+                }
+                flattenLoneWithoutSagaGroup();
+              }
               var countEl = document.querySelector('.book-count');
               if (countEl) {
                 var count = parseInt(countEl.textContent, 10);
@@ -628,7 +660,7 @@
               if (!document.querySelector('.book-card')) {
                 var sortToggle = document.querySelector('.sort-toggle');
                 if (sortToggle) sortToggle.remove();
-                var grid = document.querySelector('.book-grid');
+                var grid = document.querySelector('.saga-groups') || document.querySelector('.book-grid');
                 var emptyTemplate = document.getElementById('empty-state-template');
                 if (grid) {
                   if (emptyTemplate) {

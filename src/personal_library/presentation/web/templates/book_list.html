@@ -17,7 +17,9 @@
   {% endif %}
 </section>
 
-{% if books %}
+{% if groups %}
+{% include "partials/saga_groups.html" %}
+{% elif books %}
 {% include "partials/book_grid.html" %}
 {% else %}
 {% include "partials/empty_state.html" %}
