@@ -232,7 +232,8 @@ data/
 Thumbs.db
 
 # Project-specific
-.github/
+.github/*
+!.github/workflows/
 .superpowers/
 docs/superpowers/
 docs/code-reviews/
